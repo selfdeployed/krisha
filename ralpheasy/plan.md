@@ -149,7 +149,7 @@ All tasks below have their `passes` field set to true.
       "Paste a few real rows of sample_features.csv into this task's activity.md log entry as evidence.",
       "Do not run any function in this file against AstanaLinksParserJune2026_parsed.csv or 2025_data.csv in this or any task."
     ],
-    "passes": false,
+    "passes": true,
     "depends_on": ["feature_engineering_spec"]
   },
   {

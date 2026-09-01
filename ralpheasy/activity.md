@@ -3,10 +3,106 @@
 ## Current Status
 
 **Last Updated:** 2026-09-01
-**Tasks Completed:** 5 / 11
-**Current Task:** feature_scaffold_code (next, not started)
+**Tasks Completed:** 6 / 11
+**Current Task:** ranking_methodology_spec (next; eda_plan also unblocked, both depend only on feature_engineering_spec)
 
 ## Session Log
+
+### 2026-09-01 — feature_scaffold_code completed
+
+Implemented `methodology/scripts/feature_engineering.py` per `FEATURE_SPEC.md`:
+`haversine_km` with an inline-literal self-check (Baiterek Tower → Khan
+Shatyr, asserted in the 0.5-3.0 km range — both well-known close-together
+landmarks, loose bound only to catch a broken formula, not to pin an exact
+figure); `compute_avg_price_m2_within_radius` (O(n²) pairwise haversine,
+adds `avg_price_m2_within_3km_mean/median`, `n_neighbors_3km`, and a
+`low_confidence_spatial` flag when `n_neighbors_3km < 3`, docstring TODO
+for a BallTree spatial index at full scale, not implemented here);
+`compute_group_aggregate` (median/count/`insufficient_n` flag, `min_n=5`
+default) used for both `complex_median_price_m2` and
+`district_median_price_m2`; module-level `CITY_CENTER`, `MALLS`,
+`PARK_POINT`, `EMBANKMENT_POINT` constants (each commented
+`# TODO: approximate, manually sourced, verify before use`) and an empty
+`STATIONS = {}` stub with a comment explaining the original source file is
+lost; `near_mall_1km` computed as OR across all non-`khan_shatyr` mall
+dummies per the spec (khan_shatyr itself is still given its own
+`mall_khan_shatyr_1km` distance column, just excluded from the OR, since
+it is the omitted reference category); a fresh 500m lat/lon grid for
+`grid_cell_id` (approximated at Astana's ~51.1°N latitude for the
+longitude step, not matched to the lost original DiD grid, per spec's
+explicit allowance).
+
+`--sample` mode joins `sample_parsed_preview.csv` (parser output, no
+lat/lon/fetched_at) with the raw `sample_rows.csv` on `source_row` — the
+cross-file join FEATURE_SPEC.md flagged as required — computes
+`price_m2`/`ln_price_m2`/`ln_area`/`building_age`/`kitchen_area_ratio`,
+all spatial features, and both group aggregates for every row, and writes
+`methodology/samples/sample_features.csv`.
+
+**Verification — `python methodology/scripts/feature_engineering.py --sample`**
+(real run against the real 16-row sample, joined with the raw fixture):
+```
+ok   haversine_km self-check: Baiterek Tower -> Khan Shatyr = 1.619 km
+wrote 16 feature rows to .../methodology/samples/sample_features.csv
+price_m2 computed: 15/16
+n_neighbors_3km stats:
+count    16.000000
+mean      4.875000
+std       3.556684
+min       0.000000
+25%       1.000000
+50%       6.500000
+75%       8.000000
+max       9.000000
+low_confidence_spatial (n_neighbors_3km < 3): 5/16
+complex_median_price_m2 present: 8/16
+district_median_price_m2 present: 15/16
+```
+
+**Eyeballed `sample_features.csv` for plausibility (real values, not
+assumed):**
+- The 11 Алматы-district rows sit in a tight geographic cluster
+  (lat ~51.11-51.16, lon ~71.47-71.51) and correctly get `n_neighbors_3km`
+  of 3-9 with mutually similar `avg_price_m2_within_3km_median` values
+  (~520,000-524,000 ₸/m² for most of them — makes sense, they're each
+  other's neighbors). `district_listing_count=11`,
+  `district_insufficient_n=False` (11 ≥ `min_n=5`).
+- Deliberately isolated rows get `n_neighbors_3km=0` or `1` as expected
+  from the sample's intentional geographic spread (per `sample_fixture`):
+  `source_row=2` (Turan Tower, Нура district, lon 71.4027 — ~7.5km west of
+  the Алматы cluster) → `n_neighbors_3km=0`. `source_row=12` (Sanara) and
+  `source_row=11` (MOD Frame), both Есильский district and only ~1.3km
+  apart from each other but far from everything else, each get
+  `n_neighbors_3km=1` — they are each other's only neighbor, a real
+  pairwise sanity check that the radius logic is symmetric and correct.
+  `source_row=15` (Акерке 2, Сарыарка, lat 51.1686 — northernmost point)
+  → `n_neighbors_3km=0`.
+- The error row (`source_row=87`) correctly has `price_m2`, all engineered
+  numeric features, and `n_neighbors_3km=0` / `low_confidence_spatial=True`
+  (no lat/lon to compute distances from) — matches the spec's documented
+  missingness expectation exactly, not an outlier or bug.
+- `complex_median_price_m2` present on exactly 8/16 rows (same 8 rows with
+  `complex_name`), and `complex_listing_count=1` with
+  `complex_insufficient_n=True` for every one of them — expected and
+  called out by the task steps ("most sample rows may lack enough
+  same-complex peers"), since 16 total rows across 8 distinct complexes
+  can't reach `min_n=5` in any single complex at this sample size.
+- `kitchen_area_ratio` for `source_row=2`: `10.0 / 65.3 = 0.15314...`,
+  matches the script's printed float exactly.
+- `mall_khan_shatyr_1km=True` and `mall_keruen_1km=True` both hold for
+  `source_row=2` (it happens to be close to central Astana even though
+  it's geographically isolated from the Алматы-district cluster of other
+  sample rows) — `near_mall_1km=True` correctly derives from
+  `mall_keruen_1km` (non-reference) alone, per the spec's OR-except-
+  khan_shatyr rule, confirmed by inspecting the raw boolean columns in
+  the CSV rather than trusting the derived column blindly.
+
+No function in this file was run against `AstanaLinksParserJune2026_parsed.csv`
+or `2025_data.csv`.
+
+Next: ranking_methodology_spec and eda_plan are both now unblocked
+(`depends_on: ["feature_engineering_spec"]`, which is `true`); the plan's
+ordering lists `ranking_methodology_spec` first.
 
 ### 2026-09-01 — feature_engineering_spec completed
 
