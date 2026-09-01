@@ -3,10 +3,80 @@
 ## Current Status
 
 **Last Updated:** 2026-09-01
-**Tasks Completed:** 9 / 11
-**Current Task:** methodology_consolidation (next; depends_on field_extraction_spec, build_parser_script, feature_engineering_spec, feature_scaffold_code, ranking_methodology_spec, ranking_scaffold_code, eda_plan — all now true). final_review remains blocked until methodology_consolidation is done.
+**Tasks Completed:** 10 / 11
+**Current Task:** final_review (next; depends_on methodology_consolidation, now true — the only remaining task).
 
 ## Session Log
+
+### 2026-09-01 — methodology_consolidation completed
+
+Wrote `METHODOLOGY.md` at the repo root (same level as `2025_data.csv`,
+`LinksParser`, `ralpheasy/`): dataset scope decision
+(`AstanaLinksParserJune2026_parsed.csv` primary, `2025_data.csv` explicitly
+out of scope for this run and noted as a candidate for a future
+year-over-year trend-comparison extension); a "reading order for a human"
+list linking each of `methodology/PARSING_SPEC.md`, `FEATURE_SPEC.md`,
+`RANKING_METHODOLOGY.md`, `EDA_PLAN.md` and their corresponding scripts in
+implementation order; a restatement of the two-pronged ranking approach
+(percentile rank + OLS residual) and how they combine into
+`good_deal_score`; a "what was actually run and verified" section with the
+real per-task output numbers (selftest 35/35, sample parse 15/16 non-error
+rows, feature sample n_neighbors_3km 0-9, ranking sample OLS R²=0.4503,
+n=13/16) and the reproduction command list; a consolidated "known
+data-quality gaps" section (room count, station/mall reference
+coordinates, pipe-delimited fallback, district label normalization,
+`complex_name` coverage gap); and a "next steps to run at scale" section
+explicitly marked out of scope for this loop.
+
+**Doc/code field-name cross-check (the task's required reconciliation
+pass):** read `parse_listings.py`, `feature_engineering.py`, and
+`ranking.py` directly, and pulled the real header rows of
+`sample_features.csv` and `sample_ranked_preview.csv` via pandas to
+compare against every field name referenced in `FEATURE_SPEC.md` and
+`RANKING_METHODOLOGY.md`:
+```
+python -c "import pandas as pd; df=pd.read_csv('methodology/samples/sample_features.csv', encoding='utf-8'); print(list(df.columns))"
+python -c "import pandas as pd; df=pd.read_csv('methodology/samples/sample_ranked_preview.csv', encoding='utf-8'); print(list(df.columns))"
+```
+Both real header lists match every field name used in the docs exactly
+(`ln_price_m2`, `ln_area`, `avg_price_m2_within_3km_mean/median`,
+`n_neighbors_3km`, `complex_median_price_m2`/`complex_listing_count`,
+`district_median_price_m2`/`district_listing_count`, `grid_cell_id`,
+`percentile_rank_in_district`/`percentile_rank_in_complex`,
+`predicted_price_m2`, `actual_price_m2`, `ols_residual_score`,
+`good_deal_score`, etc.) — no drift found in the feature/ranking layer.
+
+**One real drift found and fixed, in the docs (not the code):**
+`PARSING_SPEC.md` section 3's prose read `is_under_construction = year >
+fetch_year`, but `parse_listings.py`'s actual implementation uses `>=`
+(deliberately, per a bug found and documented during `build_parser_script`
+— a listing built in the same calendar year it was fetched is still
+pre-construction on krisha.kz, confirmed by the section's own worked test
+case: `build_year=2026`, fetched 2026, labeled "under construction," which
+requires `>=` since `2026 > 2026` is `False`). `build_parser_script`'s
+activity-log entry had already flagged this exact reconciliation as
+pending for this task. Fixed `PARSING_SPEC.md` to say `>=` and added a
+sentence explaining why, rather than changing the (already-correct, tested)
+code — per the task step's "prefer fixing the docs unless the script
+clearly has a bug" instruction. `FEATURE_SPEC.md`'s own
+`is_under_construction` row already said `>=` correctly, so no change was
+needed there.
+
+**Verification:** no script was re-run with code changes (none were made
+to any `.py` file — only doc prose changed), so no `--selftest`/`--sample`
+re-run was needed per the task's own scope note ("new execution here is
+limited to re-running the existing modes if needed to verify a fix" — not
+needed here since the fix was documentation-only and the underlying code
+was already correct and already verified in `build_parser_script`). The
+field-name cross-check above was the real verification step for this
+task, run against the actual current CSV outputs rather than assumed
+correct from memory.
+
+No script was run against `AstanaLinksParserJune2026_parsed.csv` or
+`2025_data.csv` in this task.
+
+Next: `final_review` (`depends_on: ["methodology_consolidation"]`, now
+`true`) — the last task in the plan.
 
 ### 2026-09-01 — eda_plan completed
 

@@ -212,7 +212,7 @@ All tasks below have their `passes` field set to true.
       "Cross-check field and feature names: open parse_listings.py, feature_engineering.py, and ranking.py and confirm every field name referenced in FEATURE_SPEC.md and RANKING_METHODOLOGY.md actually matches a real column produced by the pipeline (check against the real sample_features.csv / sample_ranked_preview.csv headers, not just the docs). Fix any drift found in either the docs or the scripts (prefer fixing the docs unless the script clearly has a bug).",
       "Do not execute any script against the full dataset in this task; new execution here is limited to re-running the existing --sample/--selftest modes if needed to verify a fix."
     ],
-    "passes": false,
+    "passes": true,
     "depends_on": ["field_extraction_spec", "build_parser_script", "feature_engineering_spec", "feature_scaffold_code", "ranking_methodology_spec", "ranking_scaffold_code", "eda_plan"]
   },
   {

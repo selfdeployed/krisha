@@ -94,11 +94,18 @@ span is excluded from the label-segmentation search.
     `панельный`.
   - Absent: row 7 (`source_row=20`), advert_info has no `Тип дома` label at
     all — `building_type = None`, not an error.
-- **`Год постройки\s+(\d{4})`** → `int`. `is_under_construction = year >
+- **`Год постройки\s+(\d{4})`** → `int`. `is_under_construction = year >=
   fetch_year` where `fetch_year` is derived from the row's `fetched_at`
-  column (all sample rows fetched in 2026).
-  - Test cases: row 0 `2026` → under construction; row 3 `2025` → not;
-    row 11 `1981` → not (oldest in sample).
+  column (all sample rows fetched in 2026). `>=`, not strict `>`: a
+  listing built in the same calendar year it was fetched is still sold as
+  pre-construction on krisha.kz — confirmed by this section's own worked
+  test case below (`build_year=2026`, fetched in 2026, "under
+  construction"), which `year > fetch_year` would incorrectly mark
+  `False`. (`build_parser_script`'s implementation caught and fixed this
+  exact discrepancy between an earlier draft of this prose and the test
+  case; `>=` is what's implemented and correct.)
+  - Test cases: row 0 `2026`, fetched 2026 → under construction (`2026 >=
+    2026`); row 3 `2025` → not; row 11 `1981` → not (oldest in sample).
 - **`Этаж\s+(\d+)\s+из\s+(\d+)`** → `floor`, `floor_total` ints. Derive
   `floor_is_first = floor == 1`, `floor_is_last = floor == floor_total`.
   **OPTIONAL** — absent for at least one pre-construction listing where no
