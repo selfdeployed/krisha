@@ -3,10 +3,68 @@
 ## Current Status
 
 **Last Updated:** 2026-09-01
-**Tasks Completed:** 8 / 11
-**Current Task:** eda_plan (next; depends_on feature_engineering_spec, already true). methodology_consolidation and final_review remain blocked until eda_plan and (for consolidation) all other doc/code tasks are done.
+**Tasks Completed:** 9 / 11
+**Current Task:** methodology_consolidation (next; depends_on field_extraction_spec, build_parser_script, feature_engineering_spec, feature_scaffold_code, ranking_methodology_spec, ranking_scaffold_code, eda_plan — all now true). final_review remains blocked until methodology_consolidation is done.
 
 ## Session Log
+
+### 2026-09-01 — eda_plan completed
+
+Wrote `methodology/EDA_PLAN.md`: the exploratory-analysis plan to run FIRST
+once real full-scale parsing eventually happens — missingness report per
+parsed field (cross-referenced against known coverage rates already
+established in `sample_fixture`'s full-file scan and `FEATURE_SPEC.md`:
+`complex_name` ~76-78% present, `rooms` ~0%, `kitchen_area_m2` ~45% missing
+at full scale, `apartment_condition` 13,961/34,766 missing, `building_type`
+~7% missing, `status` ok=33,809/error=957); distribution checks (price,
+area, log-scale price_m2, build_year sanity bounds <1950 or
+>current_year+5, listings-per-district bar chart, listings-per-complex top
+20 + long tail); per-district (not global) outlier-detection rules via
+IQR or a `[median*0.2, median*5]` band; a duplicate/relist detection check
+on `(lat, lon, area_total_m2, price_tenge)` tuples; a geographic
+bounding-box sanity check; a correlation matrix / VIF pre-check across the
+engineered numeric features ahead of the OLS step; the specific full-scale
+audits that fell out of the parsing-spec work (complete distinct-value
+lists for `district`/`building_type`, pipe-fallback frequency, future
+build-year frequency); and a closing note that execution against the full
+dataset is deferred to a future run, with any sample-based illustration
+explicitly labeled "illustrative only, not representative."
+
+**Documentation-only task — no code was written as a deliverable.**
+Verification consisted of cross-checking every cited number against real
+files/prior activity-log entries rather than assumption, plus one live
+spot-check:
+
+- Cross-checked all full-file coverage stats cited (complex_name
+  27,121/34,766, kitchen_area_m2 15,603/34,766, apartment_condition
+  13,961/34,766, building_type 2,525/34,766, status ok=33,809/error=957,
+  pipe-fallback 1,659/34,766, build_year>=2026 4,389/34,766) against the
+  real numbers already recorded in this log's `sample_fixture` entry
+  (2026-09-01) — all match exactly, no numbers invented for this doc.
+- Ran a live check against the real `methodology/samples/sample_features.csv`
+  to confirm the claim "the sample fixture's 16 rows surfaced 4 distinct
+  districts":
+  ```
+  python -c "import pandas as pd; df=pd.read_csv('methodology/samples/sample_features.csv', encoding='utf-8'); print(df['district'].nunique(dropna=True))"
+  4
+  ```
+  Matches exactly (Нура, Есильский, Алматы, Сарыарка per
+  `methodology/samples/README.md`'s per-row edge-case table, read via the
+  Read tool rather than printed raw to the console). Deleted the scratch
+  `value_counts` dump file used for this check afterward — not part of the
+  deliverable.
+- Confirmed the VIF>10 decision rule referenced in section 6 matches the
+  one already specified in `RANKING_METHODOLOGY.md` section 5 (read
+  directly, not reconstructed from memory) rather than introducing a
+  conflicting threshold.
+
+No script was run against `AstanaLinksParserJune2026_parsed.csv` or
+`2025_data.csv` in this task; the one live command above ran only against
+the existing 16-row `sample_features.csv`.
+
+Next: `methodology_consolidation` (`depends_on` all seven prior doc/code
+tasks, every one of which is now `true`) — the only remaining unblocked
+task; `final_review` stays blocked until it is done.
 
 ### 2026-09-01 — ranking_scaffold_code completed
 

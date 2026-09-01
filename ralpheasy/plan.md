@@ -199,7 +199,7 @@ All tasks below have their `passes` field set to true.
       "List the specific edge-case audits that fell out of the parsing spec work and should be run at full scale: complete distinct-value list of district and building_type strings (to confirm no unexpected variants slipped through), frequency of the pipe-delimited parameters-fallback format, frequency of future/under-construction build years.",
       "State explicitly, in a closing note, that executing this plan against the full dataset is deferred to a future run outside this loop; you may illustrate the method (labeled 'illustrative only, not representative') using sample_features.csv / sample_ranked_preview.csv."
     ],
-    "passes": false,
+    "passes": true,
     "depends_on": ["feature_engineering_spec"]
   },
   {
