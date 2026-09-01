@@ -3,10 +3,65 @@
 ## Current Status
 
 **Last Updated:** 2026-09-01
-**Tasks Completed:** 1 / 11
-**Current Task:** sample_fixture (next, not started)
+**Tasks Completed:** 2 / 11
+**Current Task:** field_extraction_spec (next, not started)
 
 ## Session Log
+
+### 2026-09-01 — sample_fixture completed
+
+Installed `pandas` and `statsmodels` into the system Python (none were
+present before; needed for this and every later task). Opened
+`AstanaLinksParserJune2026_parsed.csv` with `pandas.read_csv(encoding='utf-8')`
+in a single read pass (34,766 rows, columns: `source_row, url, status,
+http_status, advert_info, parameters, lat, lon, fetched_at, error`) to
+compute coverage stats and hand-pick candidate rows for each required edge
+case. No parsing/feature/ranking logic was run against the full file —
+only exploratory `.str.contains()` counts and row selection.
+
+Coverage stats observed on the full file (for context only, not written
+anywhere as a pipeline result): `status` ok=33809/error=957;
+`Жилой комплекс` present in 27,121 rows (~78%) vs absent in 7,645 (~22%);
+pipe-delimited `parameters` fallback (`' | '` + `р-н`) in 1,659 rows;
+missing kitchen area in 15,603 rows; missing apartment condition in 13,961
+rows; missing building type in 2,525 rows; build_year >= 2026 in 4,389
+rows. These match the ranges asserted in plan.md.
+
+Hand-picked 16 rows (by dataframe positional index, since `source_row=87`
+turned out to be duplicated across two positional rows in the raw file —
+selecting by `source_row` alone would have been ambiguous) covering: (a)
+typical rows with `Жилой комплекс` + full params, (b) standalone rows
+without `Жилой комплекс`, (c) the pipe-delimited `parameters` fallback
+format (confirmed present, including the exact `Sanara`/`Есильский`
+example named in the plan), (d) one `status='error'`/`http_status=404` row
+with empty advert_info/parameters/lat/lon, (e) rows missing kitchen area,
+apartment condition, or building type, (f) rows with build_year >= 2026
+(under construction). Saved to `methodology/samples/sample_rows.csv`
+(utf-8, original columns preserved) and documented per-row edge-case
+coverage in `methodology/samples/README.md`.
+
+**Verification (real command output):**
+```
+wrote 16 rows
+[2, 3, 7, 15, 8, 12, 97, 20, 21, 37, 43, 58, 133, 161, 87, 11]
+```
+Re-read the written file back with pandas (utf-8) to confirm it round-trips:
+```
+(16, 10)
+```
+Spot-checked lat/lon spread: latitudes 51.078295-51.168629 (~10km N-S),
+longitudes 71.396319-71.512703 (~8km E-W), with a mix of tightly clustered
+points and isolated ones (e.g. row source_row=11 at 51.078295/71.435875 is
+the southwesternmost point) so `n_neighbors_3km` will vary meaningfully in
+the later feature_scaffold_code task. Row source_row=87 (the error row)
+has NaN lat/lon as expected, confirmed excluded from any distance
+calculation consideration.
+
+Deleted the scratch exploration scripts (`ralpheasy/tmp_explore.py`,
+`ralpheasy/tmp_candidates.py`, `ralpheasy/tmp_build_sample.py`, and their
+`_output.txt` files) after use — they are not part of the deliverable.
+
+Next: field_extraction_spec (depends_on sample_fixture, now satisfied).
 
 ### 2026-09-01 — bootstrap_git completed
 

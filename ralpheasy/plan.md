@@ -84,7 +84,7 @@ All tasks below have their `passes` field set to true.
       "Write methodology/samples/README.md documenting, per row, which edge case it was chosen to cover.",
       "Do not scan or process the file for any purpose beyond selecting this fixed sample."
     ],
-    "passes": false,
+    "passes": true,
     "depends_on": ["bootstrap_git"]
   },
   {
