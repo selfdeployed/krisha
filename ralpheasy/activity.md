@@ -3,10 +3,72 @@
 ## Current Status
 
 **Last Updated:** 2026-09-01
-**Tasks Completed:** 4 / 11
-**Current Task:** feature_engineering_spec (next, not started)
+**Tasks Completed:** 5 / 11
+**Current Task:** feature_scaffold_code (next, not started)
 
 ## Session Log
+
+### 2026-09-01 — feature_engineering_spec completed
+
+Wrote `methodology/FEATURE_SPEC.md`: core hedonic features reconstructed
+from the structure of `01_near_stations_final.py` and
+`02_between_stations_final.py`; the user-requested `avg_price_m2_within_3km`
+spatial feature (mean + median + `n_neighbors_3km` reliability count,
+configurable radius); additional spatial/comparative features
+(`distance_to_center_km`, the station/line distance TODO stub,
+mall/park/embankment 1km dummies reconstructed from `AMENITY_TERMS` in
+`02_between_stations_final.py`, `complex_median_price_m2` /
+`district_median_price_m2` with `min_n` thresholds, `kitchen_area_ratio`,
+`grid_cell_id`); a field-dependency table cross-checked against real
+column names; and a known-data-quality-risks section.
+
+**Documentation-only task — no code was written or run** (that is
+`feature_scaffold_code`, next). Verification consisted of cross-checking
+every claim against real files rather than assumption:
+
+- Searched the full repo tree for `run_main_model.py` and
+  `export_current_models_two_tabs.py` (the source of the exact `CONTROLS`
+  formula, the real station/line reference table, and the real mall/park
+  coordinates) — confirmed **not present anywhere in this repo**
+  (`find ... -iname "run_main_model.py" -o -iname "export_current_models*"`
+  returned nothing). This is why `distance_to_nearest_station_m` /
+  `distance_to_line_m` is documented as an explicit empty TODO stub rather
+  than implemented with fabricated coordinates, and why the mall/park/
+  city-center coordinates in FEATURE_SPEC.md are labeled approximate and
+  flagged for manual verification rather than presented as sourced from
+  the original scripts.
+- Read `01_near_stations_final.py` and `02_between_stations_final.py`
+  directly to confirm the real `AMENITY_TERMS` list (`near_park_1km,
+  near_embankment_1km, near_mall_1km, mall_mega_silkway_1km,
+  mall_asia_park_1km, mall_keruen_1km, mall_keruen_city_1km,
+  mall_saryarka_1km`) and the `Khan Shatyr` omitted-reference-category
+  assertion (`source.MALL_REFERENCE != "Khan Shatyr"` raises) copied
+  verbatim into FEATURE_SPEC.md's table.
+- Read `methodology/samples/sample_parsed_preview.csv` (the real output of
+  `build_parser_script`) directly and counted missingness per field by
+  hand against its real 16 rows rather than guessing, catching and fixing
+  three numbers that were wrong in an earlier draft of this doc:
+  `kitchen_area_m2` missing is 11/16 (not 10/16 as first estimated —
+  present only on source_row 2, 3, 7, 15, 97); `building_type` missing is
+  2/16 (not 1/16 — source_row 20 AND the error row source_row=87, not just
+  20); `former_dormitory` missing is 5/16 (source_row 12, 97, 133, 161,
+  87), `exchange_possible` missing is 2/16 (source_row 12, 87);
+  `ceiling_height_m` missing is 4/16 (source_row 20, 58, 97, 87). All
+  counts in the final doc are these hand-verified real numbers.
+- Discovered and documented a real, non-obvious cross-file gap while
+  writing this: `parse_listings.py --sample`'s output
+  (`sample_parsed_preview.csv`) does **not** carry `lat`, `lon`, or
+  `fetched_at` through (confirmed by inspecting its real header row —
+  those three columns are absent), because `parse_row()` never receives or
+  returns them. Those fields exist only in the raw `sample_rows.csv`.
+  Documented this explicitly at the top of FEATURE_SPEC.md and in the
+  field-dependency section so `feature_scaffold_code` (next task) knows up
+  front that it must load and join both CSVs on `source_row` for
+  `building_age` (needs `fetched_at`) and the spatial features (need
+  `lat`/`lon`), instead of discovering it via a runtime error.
+
+Next: feature_scaffold_code (depends_on feature_engineering_spec, now
+satisfied).
 
 ### 2026-09-01 — build_parser_script completed
 

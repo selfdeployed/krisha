@@ -132,7 +132,7 @@ All tasks below have their `passes` field set to true.
       "For every feature, specify: exact formula/derivation, which parse_listings.py output field(s) it depends on (must match field names exactly), whether it is a hard control or an optional/flagged-low-confidence one, and its expected missingness rate given known data gaps (e.g. complex_median_price_m2 unavailable for the ~22-24% of listings with no complex_name).",
       "Add a short 'known data-quality risks' subsection: mall/station reference coordinates are unverified reconstructions (need manual sourcing before production use); district label strings are used as scraped and not yet normalized against an authoritative list (deferred to eda_plan); rooms is not available in this dataset version."
     ],
-    "passes": false,
+    "passes": true,
     "depends_on": ["build_parser_script"]
   },
   {
