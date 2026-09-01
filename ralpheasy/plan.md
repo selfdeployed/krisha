@@ -118,7 +118,7 @@ All tasks below have their `passes` field set to true.
       "Paste 2-3 real before/after example rows into this task's activity.md log entry as evidence of verification.",
       "Do NOT run this script against AstanaLinksParserJune2026_parsed.csv or 2025_data.csv in this or any task."
     ],
-    "passes": false,
+    "passes": true,
     "depends_on": ["field_extraction_spec"]
   },
   {

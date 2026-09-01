@@ -3,10 +3,143 @@
 ## Current Status
 
 **Last Updated:** 2026-09-01
-**Tasks Completed:** 3 / 11
-**Current Task:** build_parser_script (next, not started)
+**Tasks Completed:** 4 / 11
+**Current Task:** feature_engineering_spec (next, not started)
 
 ## Session Log
+
+### 2026-09-01 — build_parser_script completed
+
+Implemented `methodology/scripts/parse_listings.py` per `PARSING_SPEC.md`:
+the ordered-label alternation regex + `re.finditer`-position-sort +
+slice-between-labels core (`segment_labels`), dedicated price/district
+prefix regexes, and a `field()` merge helper (advert_info value wins,
+parameters value fills the gap only when advert_info's is missing/empty).
+
+**Deliberate simplification vs. the spec's literal wording, verified to
+produce identical results on every documented test case:** PARSING_SPEC.md
+describes the pipe-delimited fallback as "split `parameters` on `' | '`,
+re-run the label logic per segment." In the actual implementation,
+`segment_labels()` is run directly on the raw (unsplit) `parameters`
+string — `finditer` finds label positions regardless of what separates
+them, and `|`/`" | "` were simply added to the value-strip character set.
+This produces the same output as segment-by-segment splitting for every
+pipe-fallback row in the sample (verified below) with much less code, so
+no separate pipe-splitting code path was written. Documented as a comment
+in the script.
+
+**Bug found and fixed during verification (a real, not hypothetical,
+mismatch with the spec's literal formula text):** the spec's formula for
+`is_under_construction` is written as `year > fetch_year`, but its own
+worked test case (row 0, `build_year=2026`, `fetched_at=2026-07-13`)
+labels that row "under construction" — which requires `>=`, not `>`
+(`2026 > 2026` is `False`). Implemented `>=` (a listing built in the same
+calendar year it was fetched is still being sold pre-construction on
+krisha.kz) and added a code comment explaining the discrepancy. Flagging
+here for the `methodology_consolidation` task's doc/code reconciliation
+pass — PARSING_SPEC.md's prose should be corrected to `>=` to match its
+own test case and this implementation.
+
+**Verification — `python methodology/scripts/parse_listings.py --selftest`**
+(35 inline-literal checks pulled from PARSING_SPEC.md's real test-case
+strings, no CSV access, runs in a fraction of a second):
+```
+ok   price (plain)
+ok   district prefix regex captures label text
+ok   complex_name
+ok   build_year
+ok   is_under_construction
+ok   area not concatenated with kitchen
+ok   kitchen_area_m2 (integer form)
+ok   apartment_condition rough
+ok   ceiling_height_m (decimal)
+ok   former_dormitory False
+ok   exchange_possible False (capitalized value, case-insensitive)
+ok   floor/floor_total
+ok   floor_is_first/last (neither)
+ok   installment price (not ^-anchored)
+ok   price_is_installment flag
+ok   district despite installment words
+ok   floor absent -> None, not False
+ok   ceiling_height_m bare integer
+ok   balcony free text not swallowed
+ok   balcony_glazed separately True
+ok   bathroom from advert_info
+ok   condition needs_renovation bucket
+ok   security multi-word item preserved
+ok   floor_is_first True
+ok   exchange_possible True
+ok   pipe-fallback gap-fill no-op (advert_info already complete)
+ok   building_type None when absent from both columns
+ok   complex_name None (standalone)
+ok   floor_is_last True (6 of 6)
+ok   area from pipe segment with two labels
+ok   kitchen_area from same pipe segment
+ok   condition unknown (absent from both columns)
+ok   error row price None
+ok   error row warning
+ok   error row rooms_bucket None
+
+selftest: 35 checks passed
+```
+
+**Verification — `python methodology/scripts/parse_listings.py --sample`**
+(reads `methodology/samples/sample_rows.csv`, encoding='utf-8', writes
+`methodology/samples/sample_parsed_preview.csv`):
+```
+wrote 16 parsed rows to .../methodology/samples/sample_parsed_preview.csv
+error rows (status=error): 1
+pipe-delimited fallback detected: 5
+price parsed: 15/16
+district parsed: 15/16
+area_total_m2 parsed: 15/16
+complex_name present: 8/16
+```
+These match the fixture exactly: 1 error row (source_row=87), 5
+pipe-fallback rows (source_row 12, 97, 20, 133, 161), 15/16 non-error rows
+have price/district/area, and complex_name present on exactly the 8 rows
+documented in `sample_rows README.md` (source_row 2, 3, 7, 15, 8, 12, 97,
+11).
+
+**Real before/after examples (eyeballed every one of the 16 output rows
+against the original `sample_rows.csv` text, read back via the Read tool
+— never printed raw Cyrillic to the Windows console):**
+
+1. `source_row=2` (Turan Tower, typical case): `advert_info` "56 500 000 ₸
+   ... Нура р-н ... Тип дома монолитный Жилой комплекс Turan Tower Год
+   постройки 2026 Этаж 5 из 27 Площадь 65.3 м², Площадь кухни — 10 м²
+   Состояние квартиры черновая отделка" → `price_tenge=56500000,
+   district=Нура, complex_name="Turan Tower", build_year=2026,
+   is_under_construction=True, floor=5, floor_total=27, area_total_m2=65.3,
+   kitchen_area_m2=10.0, apartment_condition=rough`. Area correctly not
+   concatenated with kitchen area.
+
+2. `source_row=12` (Sanara, hardest real case — installment price prefix +
+   pipe-delimited fallback + missing floor): `advert_info` "от 78 950 600 ₸
+   Рассрочка Город Астана, Есильский р-н ... Тип дома монолитный Жилой
+   комплекс Sanara Год постройки 2027 Площадь 106.69 м² ..." (no `Этаж`
+   label anywhere) → `price_tenge=78950600, price_is_installment=True,
+   district=Есильский, complex_name="Sanara", build_year=2027,
+   is_under_construction=True, floor=<empty/None>,
+   floor_is_first=<empty/None>, area_total_m2=106.69,
+   parse_warnings=['pipe-delimited parameters fallback detected']`. Floor
+   correctly `None` (unknown), not `False`.
+
+3. `source_row=20` (standalone, missing building type, pipe fallback):
+   `advert_info` "22 400 000 ₸ ... Алматы р-н ... Год постройки 1989 Этаж
+   6 из 6 Площадь 51 м² Балкон балкон Бывшее общежитие нет Возможен обмен
+   Нет" (no `Тип дома` or `Жилой комплекс` anywhere in either column) →
+   `building_type=<empty/None>, complex_name=<empty/None>, floor=6,
+   floor_total=6, floor_is_last=True, former_dormitory=False,
+   exchange_possible=False`. Confirms gap-fill correctly leaves a field
+   `None` when neither column has it, rather than inventing a value.
+
+Deleted the scratch dump script (`ralpheasy/tmp_dump.txt`, used only to
+read raw sample text via the Read tool during development) after use — not
+part of the deliverable.
+
+Next: feature_engineering_spec (depends_on build_parser_script, now
+satisfied).
 
 ### 2026-09-01 — field_extraction_spec completed
 
