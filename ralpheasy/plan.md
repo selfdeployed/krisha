@@ -166,7 +166,7 @@ All tasks below have their `passes` field set to true.
       "Specify how the two approaches combine into one presentation per listing: show percentile_rank_in_complex, percentile_rank_in_district, predicted_price_m2, actual_price_m2, and ols_residual_score side by side (not silently merged into a single number) plus a composite good_deal_score defined as the average of z-scored versions of (negative percentile rank) and (negative OLS residual), with predicted_price_m2/ols_residual_score treated as primary only when the model's diagnostics are healthy and sample size is adequate (i.e. on the full dataset, not the sample-scale check).",
       "Add a short 'what would invalidate this' section: overfitting risk from too many dummy variables relative to n, complex_name coverage gap (~22-24% missing) meaning percentile_rank_in_complex is undefined for those rows (fall back to district-only ranking), and the unresolved station/mall reference-data gap limiting which spatial features are actually usable until that data is curated."
     ],
-    "passes": false,
+    "passes": true,
     "depends_on": ["feature_engineering_spec"]
   },
   {

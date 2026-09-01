@@ -3,10 +3,77 @@
 ## Current Status
 
 **Last Updated:** 2026-09-01
-**Tasks Completed:** 6 / 11
-**Current Task:** ranking_methodology_spec (next; eda_plan also unblocked, both depend only on feature_engineering_spec)
+**Tasks Completed:** 7 / 11
+**Current Task:** ranking_scaffold_code (next; depends_on ranking_methodology_spec + feature_scaffold_code, both now true). eda_plan is also unblocked (depends only on feature_engineering_spec) but plan ordering lists ranking_scaffold_code first.
 
 ## Session Log
+
+### 2026-09-01 — ranking_methodology_spec completed
+
+Wrote `methodology/RANKING_METHODOLOGY.md`: Approach A (naive percentile
+rank within complex/district, explicitly labeled as ignoring all feature
+differences), Approach B (the real full-scale OLS-residual model, formula
+sketch `ln_price_m2 ~ ln_area + building_age + floor_is_first +
+floor_is_last + ceiling_height_m + former_dormitory + exchange_possible +
+C(building_type) + C(district) + distance_to_center_km +
+avg_price_m2_within_3km`, explicitly future work not run in this loop),
+the trimmed sample-scale formula that `ranking_scaffold_code` (next task)
+will actually run (`ln_price_m2 ~ ln_area + avg_price_m2_within_3km_median`,
+explicitly labeled as a code-path check only, not a trustworthy
+coefficient estimate), per-complex minimum-n rule (n>=8-10 for a fitted
+fixed effect, falling back to district-model + `complex_median_price_m2`
+adjustment below that), the full diagnostics checklist (adjusted R²,
+residual-vs-fitted, QQ plot, VIF>10 rule with a concrete decision rule for
+the expected `district`/`distance_to_center_km`/`avg_price_m2_within_3km`
+collinearity, leave-one-complex-out or k-fold CV), the 500x500m
+`grid_cell_id`-clustered standard-error treatment (matching
+`01_near_stations_final.py`'s exact `get_robustcov_results(cov_type=
+"cluster", groups=..., use_correction=True, df_correction=True,
+use_t=True)` call pattern, confirmed by reading that script directly), how
+the two approaches combine into one side-by-side presentation plus a
+z-scored composite `good_deal_score`, and a "what would invalidate this"
+section (dummy-overfitting risk, the ~22-24% `complex_name` coverage gap
+requiring a district-only fallback, the unresolved station/mall
+reference-data gap).
+
+**Documentation-only task — no code was written or run** (that is
+`ranking_scaffold_code`, next). Verification consisted of cross-checking
+claims against real files rather than assumption:
+
+- Read `01_near_stations_final.py` directly (lines 40-80) to confirm the
+  exact OLS-fit and clustered-covariance call pattern
+  (`smf.ols(formula, data=sample, missing="raise").fit()` then
+  `ols.get_robustcov_results(cov_type="cluster", groups=groups,
+  use_correction=True, df_correction=True, use_t=True)` via
+  `helpers.grid_groups(used)`) before writing it into section 6, rather
+  than reconstructing it from memory/guessing.
+- Read the real header row of `methodology/samples/sample_features.csv`
+  (output of `feature_scaffold_code`) and confirmed every field name used
+  in the spec — `ln_price_m2`, `ln_area`, `avg_price_m2_within_3km_mean`/
+  `_median`, `district`, `complex_name`, `complex_median_price_m2`,
+  `district_median_price_m2`, `grid_cell_id`, `distance_to_center_km` —
+  matches exactly:
+  ```
+  source_row,url,price_tenge,...,price_m2,ln_price_m2,ln_area,fetch_year,
+  building_age,kitchen_area_ratio,distance_to_center_km,...,grid_cell_id,
+  avg_price_m2_within_3km_mean,avg_price_m2_within_3km_median,
+  n_neighbors_3km,low_confidence_spatial,complex_median_price_m2,
+  complex_listing_count,complex_insufficient_n,district_median_price_m2,
+  district_listing_count,district_insufficient_n
+  ```
+- Cross-checked the `min_n=5` threshold already used for
+  `complex_median_price_m2`/`district_median_price_m2` in `FEATURE_SPEC.md`
+  and deliberately set the new per-complex OLS fixed-effect threshold
+  higher (n>=8-10), with an explicit note explaining why a fitted dummy
+  coefficient needs more data than a simple group median.
+- Chose `avg_price_m2_within_3km_median` (not `_mean`) for the trimmed
+  sample-scale formula, consistent with `FEATURE_SPEC.md`'s stated
+  preference for the median as the more robust primary spatial-smoothing
+  signal — checked that field name exists in the real CSV header above
+  before writing it into the formula.
+
+Next: ranking_scaffold_code (depends_on ranking_methodology_spec AND
+feature_scaffold_code, both now true).
 
 ### 2026-09-01 — feature_scaffold_code completed
 
