@@ -1,0 +1,16 @@
+export_map_data.py
+input: C:\Users\DIT_Admin\Documents\Work\Krisha\methodology\full_run\ranked_full.csv
+output: C:\Users\DIT_Admin\Documents\Work\Krisha\methodology\full_run\map_data.json
+generated_at: 2026-09-01T17:07:09
+source rows total: 32136
+rows excluded (no coords): 975
+rows excluded (outside bbox (50.9, 51.3)x(71.0, 71.8)): 52
+rows shown on map: 31109
+spatial_price_pct_vs_avg null (shown as gray/hollow): 7
+spatial_rank_reliable=False (shown de-emphasized): 9
+spatial_price_pct_vs_avg_1km null: 9
+spatial_rank_reliable_1km=False: 17
+city median price_m2 (shown rows): 613079
+distinct complexes: 1272
+output file size: 2.63 MB
+elapsed: 1.09s

@@ -1,0 +1,32 @@
+parse_listings.py --full
+input: C:\Users\DIT_Admin\Documents\Work\Krisha\AstanaLinksParserJune2026_parsed.csv
+output: C:\Users\DIT_Admin\Documents\Work\Krisha\methodology\full_run\parsed_full.csv
+total rows: 34766
+elapsed: 1.4s
+error rows (status=error): 957
+pipe-delimited fallback detected: 1659
+
+field coverage (non-null / total):
+  price_tenge: 33809/34766 (97.2%)
+  district: 33763/34766 (97.1%)
+  building_type: 32241/34766 (92.7%)
+  complex_name: 27121/34766 (78.0%)
+  build_year: 33809/34766 (97.2%)
+  floor: 32101/34766 (92.3%)
+  floor_total: 32101/34766 (92.3%)
+  area_total_m2: 33809/34766 (97.2%)
+  kitchen_area_m2: 14645/34766 (42.1%)
+  apartment_condition: 16313/34766 (46.9%)
+  ceiling_height_m: 31184/34766 (89.7%)
+  bathroom: 21093/34766 (60.7%)
+  balcony: 17807/34766 (51.2%)
+  balcony_glazed: 8959/34766 (25.8%)
+  parking: 23067/34766 (66.3%)
+  former_dormitory: 30675/34766 (88.2%)
+  exchange_possible: 33576/34766 (96.6%)
+  rooms: 0/34766 (0.0%)
+
+parse_warnings breakdown (warning text -> count):
+    1659  pipe-delimited parameters fallback detected
+     957  status=error, no advert_info/parameters to parse
+      46  district prefix not found in advert_info

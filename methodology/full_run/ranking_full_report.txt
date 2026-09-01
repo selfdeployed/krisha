@@ -1,0 +1,67 @@
+ranking.py --full
+input: C:\Users\DIT_Admin\Documents\Work\Krisha\methodology\full_run\features_full.csv
+output: C:\Users\DIT_Admin\Documents\Work\Krisha\methodology\full_run\ranked_full.csv
+total rows: 32136
+
+=== PRIMARY: 3km-radius spatial relative price (drives good_deal_score) ===
+rows with a reliable (n_neighbors_3km >= 3) neighborhood avg: 31133/32136 (96.9%)
+
+=== UI TOGGLE: 1km-radius spatial relative price (not in composite) ===
+rows with a reliable (n_neighbors_1km >= 3) neighborhood avg: 31114/32136 (96.8%)
+
+=== CONTEXT ONLY: in-complex / in-district percentile (not in composite) ===
+rows with complex_listing_count >= 5 (in-complex percentile meaningful): 24612/32136 (76.6%)
+
+=== SECONDARY: DIAGNOSTIC full-formula OLS (clustered SE by grid_cell_id) ===
+NOT merged into good_deal_score yet -- diagnostic pass only, pending a
+decision on which features to keep after seeing VIF below.
+formula: ln_price_m2 ~ ln_area + building_age + floor_is_first + floor_is_last + ceiling_height_m + former_dormitory + exchange_possible + C(building_type) + C(district) + distance_to_center_km + avg_price_m2_within_3km_median
+n used in fit (complete-case across formula vars): 24567/32136 (76.4%)
+n clusters (grid_cell_id): 570
+R-squared: 0.4051  Adj R-squared: 0.4047
+coefficients (clustered SE):
+Intercept                         12.130729
+floor_is_first[T.True]            -0.030433
+floor_is_last[T.True]             -0.043711
+former_dormitory[T.True]           0.133516
+exchange_possible[T.True]         -0.022416
+C(building_type)[T.кирпичный]     -0.001615
+C(building_type)[T.монолитный]     0.044730
+C(building_type)[T.панельный]      0.073559
+C(district)[T.Байконур]            0.015813
+C(district)[T.Есильский]          -0.129506
+C(district)[T.Нура]               -0.120540
+C(district)[T.Сарайшык]           -0.045177
+C(district)[T.Сарыарка]            0.015579
+ln_area                            0.025668
+building_age                      -0.006924
+ceiling_height_m                   0.011457
+distance_to_center_km             -0.000317
+avg_price_m2_within_3km_median     0.000002
+
+p-values (clustered SE):
+Intercept                         0.000000e+00
+floor_is_first[T.True]            2.129591e-03
+floor_is_last[T.True]             1.687910e-10
+former_dormitory[T.True]          5.697867e-02
+exchange_possible[T.True]         2.802809e-03
+C(building_type)[T.кирпичный]     9.091967e-01
+C(building_type)[T.монолитный]    4.839751e-04
+C(building_type)[T.панельный]     1.024720e-02
+C(district)[T.Байконур]           4.145612e-01
+C(district)[T.Есильский]          2.894740e-05
+C(district)[T.Нура]               4.167250e-05
+C(district)[T.Сарайшык]           2.538451e-02
+C(district)[T.Сарыарка]           4.113916e-01
+ln_area                           5.525269e-02
+building_age                      6.366977e-17
+ceiling_height_m                  1.282295e-01
+distance_to_center_km             7.975320e-07
+avg_price_m2_within_3km_median    4.594036e-42
+
+VIF, continuous predictors only (complete-case n=28985):
+  ln_area: 1.04
+  building_age: 1.23
+  ceiling_height_m: 1.00
+  distance_to_center_km: 1.00
+  avg_price_m2_within_3km_median: 1.27

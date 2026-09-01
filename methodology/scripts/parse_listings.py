@@ -25,15 +25,22 @@ every pipe-fallback test case documented there (see --selftest).
 Usage:
     python parse_listings.py --selftest
     python parse_listings.py --sample
+    python parse_listings.py --full
 """
 
 import argparse
+import collections
 import os
 import re
 import sys
+import time
 from datetime import datetime
 
 import pandas as pd
+
+REPO_ROOT = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+FULL_INPUT_CSV = os.path.join(REPO_ROOT, "AstanaLinksParserJune2026_parsed.csv")
+FULL_RUN_DIR = os.path.join(REPO_ROOT, "methodology", "full_run")
 
 # Combined, ordered label list. advert_info-specific labels come first (in
 # the specific-before-general order required by the spec: "Площадь кухни"
@@ -68,7 +75,14 @@ LABELS = [
 
 _LABEL_RE = re.compile("|".join(re.escape(label) for label in LABELS))
 _PRICE_RE = re.compile(r"(\d[\d\s]*)\s*₸")  # ₸
-_DISTRICT_RE = re.compile(r"Астана,\s*([А-Яа-яёЁ\-\s]+?)\s*р-н показать на карте")
+# Two word orders confirmed in the full 34,766-row dataset: "{NAME} р-н
+# показать на карте" (most districts) and "р-н {NAME} показать на карте"
+# (Байконур specifically -- 1,661/34,766 rows, ~4.8%, all this one
+# district; found only when running parse_listings.py --full for the
+# first time against the real data, not present in the 16-row sample).
+_DISTRICT_RE = re.compile(
+    r"Астана,\s*(?:([А-Яа-яёЁ\-\s]+?)\s*р-н|р-н\s+([А-Яа-яёЁ\-]+))\s*показать на карте"
+)
 _NUM_RE = re.compile(r"(\d+(?:[.,]\d+)?)")
 _FLOOR_RE = re.compile(r"(\d+)\s+из\s+(\d+)")
 
@@ -202,7 +216,7 @@ def parse_row(advert_info, parameters, status, fetched_at=None):
     district_m = _DISTRICT_RE.search(advert_info)
     if district_m:
         out["city"] = "Астана"
-        out["district"] = district_m.group(1).strip()
+        out["district"] = (district_m.group(1) or district_m.group(2)).strip()
     else:
         warnings.append("district prefix not found in advert_info")
 
@@ -405,6 +419,23 @@ def run_selftest():
     _check("kitchen_area from same pipe segment", r["kitchen_area_m2"], 10.0); n += 1
     _check("condition unknown (absent from both columns)", r["apartment_condition"], "unknown"); n += 1
 
+    # Байконур district: reversed word order "р-н Байконур показать на
+    # карте" vs. every other district's "{NAME} р-н показать на карте".
+    # Discovered running parse_listings.py --full against the real
+    # 34,766-row dataset for the first time (1,661 rows, ~4.8%) -- not
+    # present in the 16-row sample, so this case has no PARSING_SPEC.md
+    # sample-derived test string; the literal here is taken directly from
+    # a real full-dataset row (url .../a/show/1013092466).
+    r = parse_row(
+        "70 000 000 ₸ Город Астана, р-н Байконур показать на карте Тип дома "
+        "монолитный Жилой комплекс 7 Континент Год постройки 2012 Этаж 15 "
+        "из 18 Площадь 125.1 м² Состояние квартиры не новый, но аккуратный "
+        "ремонт",
+        "", "ok", fetched_at="2026-07-13T15:47:25",
+    )
+    _check("district reversed word order (Байконур)", r["district"], "Байконур"); n += 1
+    _check("complex_name still parses after reversed district", r["complex_name"], "7 Континент"); n += 1
+
     # Row 14 (source_row=87): status=error, empty advert_info/parameters.
     r = parse_row(float("nan"), float("nan"), "error", fetched_at="2026-07-13T15:54:49")
     _check("error row price None", r["price_tenge"], None); n += 1
@@ -460,13 +491,98 @@ def run_sample():
     print(f"complex_name present: {n_complex}/{n_total}")
 
 
+# ---------------------------------------------------------------------------
+# --full: real run against the full AstanaLinksParserJune2026_parsed.csv
+# (34,766 rows) at the repo root. FIRST time this parser has run at full
+# scale -- report coverage/warning stats rather than assume a clean pass.
+# ---------------------------------------------------------------------------
+
+def run_full():
+    os.makedirs(FULL_RUN_DIR, exist_ok=True)
+    out_path = os.path.join(FULL_RUN_DIR, "parsed_full.csv")
+
+    t0 = time.time()
+    df = pd.read_csv(FULL_INPUT_CSV, encoding="utf-8")
+    n_total = len(df)
+
+    rows = []
+    for _, row in df.iterrows():
+        parsed = parse_row(
+            row.get("advert_info"), row.get("parameters"), row.get("status"),
+            fetched_at=row.get("fetched_at"),
+        )
+        parsed["source_row"] = row.get("source_row")
+        parsed["url"] = row.get("url")
+        rows.append(parsed)
+
+    out_df = pd.DataFrame(rows)
+    out_df = out_df[["source_row", "url"] + OUTPUT_FIELDS]
+
+    # security_features is a list -> stringify for CSV round-tripping,
+    # matching what --sample already implicitly does via to_csv's default
+    # str() rendering of list cells (kept identical here for consistency).
+    out_df.to_csv(out_path, index=False, encoding="utf-8")
+    elapsed = time.time() - t0
+
+    n_error = out_df["parse_warnings"].apply(
+        lambda w: any("status=error" in s for s in w)).sum()
+    n_pipe_fallback = out_df["parse_warnings"].apply(
+        lambda w: any("pipe-delimited" in s for s in w)).sum()
+
+    warning_counts = collections.Counter()
+    for w_list in out_df["parse_warnings"]:
+        for w in w_list:
+            warning_counts[w] += 1
+
+    coverage_fields = [
+        "price_tenge", "district", "building_type", "complex_name",
+        "build_year", "floor", "floor_total", "area_total_m2",
+        "kitchen_area_m2", "apartment_condition", "ceiling_height_m",
+        "bathroom", "balcony", "balcony_glazed", "parking",
+        "former_dormitory", "exchange_possible", "rooms",
+    ]
+
+    lines = []
+    lines.append(f"parse_listings.py --full")
+    lines.append(f"input: {FULL_INPUT_CSV}")
+    lines.append(f"output: {out_path}")
+    lines.append(f"total rows: {n_total}")
+    lines.append(f"elapsed: {elapsed:.1f}s")
+    lines.append(f"error rows (status=error): {n_error}")
+    lines.append(f"pipe-delimited fallback detected: {n_pipe_fallback}")
+    lines.append("")
+    lines.append("field coverage (non-null / total):")
+    for f in coverage_fields:
+        if f == "apartment_condition":
+            n_present = (out_df[f] != "unknown").sum()
+        elif f == "rooms":
+            n_present = out_df[f].notna().sum()
+        else:
+            n_present = out_df[f].notna().sum()
+        lines.append(f"  {f}: {n_present}/{n_total} ({n_present/n_total:.1%})")
+    lines.append("")
+    lines.append("parse_warnings breakdown (warning text -> count):")
+    for w, c in warning_counts.most_common():
+        lines.append(f"  {c:>6}  {w}")
+
+    report_path = os.path.join(FULL_RUN_DIR, "parse_full_report.txt")
+    with open(report_path, "w", encoding="utf-8") as f:
+        f.write("\n".join(lines) + "\n")
+
+    print(f"wrote {n_total} parsed rows to {out_path}")
+    print(f"elapsed: {elapsed:.1f}s")
+    print(f"error rows: {n_error}, pipe-fallback: {n_pipe_fallback}")
+    print(f"full report (coverage + warnings breakdown): {report_path}")
+
+
 def main():
     parser = argparse.ArgumentParser()
     parser.add_argument("--selftest", action="store_true")
     parser.add_argument("--sample", action="store_true")
+    parser.add_argument("--full", action="store_true")
     args = parser.parse_args()
 
-    if not args.selftest and not args.sample:
+    if not args.selftest and not args.sample and not args.full:
         parser.print_help()
         sys.exit(1)
 
@@ -474,6 +590,8 @@ def main():
         run_selftest()
     if args.sample:
         run_sample()
+    if args.full:
+        run_full()
 
 
 if __name__ == "__main__":

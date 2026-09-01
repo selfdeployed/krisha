@@ -232,9 +232,22 @@ def wait_between_requests(args, request_index):
     time.sleep(delay)
 
 
+def read_csv_links(path):
+    links = []
+    with open(path, "r", newline="", encoding="utf-8-sig") as handle:
+        for row in csv.DictReader(handle):
+            url = (row.get("url") or "").strip()
+            if not url:
+                continue
+            row_number = int(row["source_row"]) if row.get("source_row") else len(links) + 2
+            links.append((row_number, url))
+    return links
+
+
 def build_arg_parser():
     parser = argparse.ArgumentParser(description="Parse Krisha links from AstanaLinksParserJune2026.xlsx.")
     parser.add_argument("--input", default=str(DEFAULT_INPUT), help="Input .xlsx path.")
+    parser.add_argument("--input-csv", default=None, help="Input .csv path (columns: source_row,url) -- alternative to --input xlsx, e.g. output of discover_urls.py.")
     parser.add_argument("--output", default=str(DEFAULT_OUTPUT), help="Output .csv path.")
     parser.add_argument("--limit", type=int, default=0, help="Only process this many pending links. 0 means all.")
     parser.add_argument("--start-row", type=int, default=2, help="First Excel source row to process.")
@@ -252,7 +265,10 @@ def main():
     output_path = Path(args.output)
     if args.min_delay > args.max_delay:
         raise SystemExit("--min-delay cannot be greater than --max-delay")
-    links = [(row, url) for row, url in read_xlsx_links(input_path) if row >= args.start_row]
+    if args.input_csv:
+        links = [(row, url) for row, url in read_csv_links(args.input_csv) if row >= args.start_row]
+    else:
+        links = [(row, url) for row, url in read_xlsx_links(input_path) if row >= args.start_row]
     done_urls = load_done_urls(output_path)
     pending = [(row, url) for row, url in links if url not in done_urls]
     if args.limit:

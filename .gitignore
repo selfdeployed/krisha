@@ -12,3 +12,17 @@ AstanaLinksParserJune2026_parsed.csv
 02_between_stations_final_latest.xlsx
 Heatmap_price_m2_Astana_2025.png
 Heatmap_price_m2_Astana_2026.png
+
+# Large raw scrape outputs -- regenerate via discover_urls.py / LinksParser
+krisha_urls_*.csv
+AstanaLinksParser*_parsed.csv
+
+# Large generated pipeline outputs -- regenerate via methodology/scripts/*.py --full
+methodology/full_run/*.csv
+methodology/full_run/map_data.json
+
+# Generated map artifact (embeds base64 basemap + data) -- regenerate via
+# methodology/scripts/build_basemap_image.py + build_map_artifact.py
+methodology/map/astana_deals_map.html
+methodology/map/basemap_astana.jpg
+methodology/map/basemap_astana_meta.txt

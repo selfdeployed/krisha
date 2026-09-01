@@ -1,0 +1,24 @@
+feature_engineering.py --full
+input: C:\Users\DIT_Admin\Documents\Work\Krisha\methodology\full_run\parsed_full.csv
+output: C:\Users\DIT_Admin\Documents\Work\Krisha\methodology\full_run\features_full.csv
+rows before dedup: 34766
+duplicate/relist rows dropped (identical lat/lon/area/price): 2630
+total rows: 32136
+rows with lat/lon: 31161/32136
+engineer_features() elapsed (incl. BallTree 3km spatial join): 5.51s
+csv write elapsed: 0.41s
+
+price_m2 computed: 31179/32136
+n_neighbors_3km stats:
+count    32136.000000
+mean      5313.117065
+std       2228.209423
+min          0.000000
+25%       3917.000000
+50%       5601.000000
+75%       6877.000000
+max       9695.000000
+rows with 0 neighbors within 3km (isolated): 998/32136
+low_confidence_spatial (n_neighbors_3km < 3): 1003/32136
+complex_median_price_m2 present (complex_listing_count >= 5): 25163/32136
+district_median_price_m2 present (district_listing_count >= 5): 31133/32136

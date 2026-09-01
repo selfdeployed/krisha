@@ -15,13 +15,23 @@ spatial feature or building_age.
 
 Usage:
     python feature_engineering.py --sample
+    python feature_engineering.py --full
 """
 
 import argparse
 import math
 import os
+import time
 
+import numpy as np
 import pandas as pd
+from sklearn.neighbors import BallTree
+
+EARTH_RADIUS_KM = 6371.0088
+
+REPO_ROOT = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+FULL_RAW_CSV = os.path.join(REPO_ROOT, "AstanaLinksParserJune2026_parsed.csv")
+FULL_RUN_DIR = os.path.join(REPO_ROOT, "methodology", "full_run")
 
 # ---------------------------------------------------------------------------
 # Reference-data constants (FEATURE_SPEC.md section 3). All approximate,
@@ -86,48 +96,57 @@ def _haversine_selfcheck():
     print(f"ok   haversine_km self-check: Baiterek Tower -> Khan Shatyr = {d:.3f} km")
 
 
-def compute_avg_price_m2_within_radius(df, radius_km=3.0, stat="median", lat_col="lat", lon_col="lon", value_col="price_m2"):
-    """Add avg_price_m2_within_{radius}_mean/median and n_neighbors columns.
+def compute_avg_price_m2_within_radius(df, radius_km=3.0, label=None, stat="median", lat_col="lat", lon_col="lon", value_col="price_m2"):
+    """Add avg_price_m2_within_{label}_mean/median and n_neighbors_{label} columns.
 
-    For each row with valid lat/lon, averages `value_col` over all OTHER
-    rows within `radius_km` haversine distance that also have a valid
-    lat/lon and valid value_col. Straightforward O(n^2) pairwise loop --
-    fine at sample scale.
+    For each row with valid lat/lon/value_col, averages `value_col` over all
+    OTHER rows within `radius_km` haversine distance that also have valid
+    lat/lon/value_col. Uses sklearn.neighbors.BallTree (metric='haversine',
+    radians in/out) for an O(n log n) radius query -- required at full
+    ~35k-row scale, where the previous naive O(n^2) pairwise loop would be
+    ~604M haversine calls. Cross-checked to produce identical output to the
+    old pairwise implementation on the 16-row sample fixture before this
+    replaced it (see full-run activity notes).
 
-    TODO: at full ~35k-row scale this must be replaced with a spatial
-    index (e.g. sklearn.neighbors.BallTree with metric='haversine') for
-    performance -- not implemented or benchmarked here.
+    `label` names the output columns (defaults to e.g. "3km" derived from
+    radius_km) -- lets this run at multiple radii (3km primary, 1km toggle)
+    without column collisions.
     """
-    df = df.copy()
-    means, medians, counts = [], [], []
-    valid = df[lat_col].notna() & df[lon_col].notna()
+    if label is None:
+        label = f"{radius_km:g}km"
+    n = len(df)
+    means = [None] * n
+    medians = [None] * n
+    counts = [0] * n
 
-    for i, row in df.iterrows():
-        if not valid.loc[i] or pd.isna(row[value_col]):
-            means.append(None)
-            medians.append(None)
-            counts.append(0)
-            continue
-        neighbor_values = []
-        for j, other in df.iterrows():
-            if i == j or not valid.loc[j] or pd.isna(other[value_col]):
+    valid = (df[lat_col].notna() & df[lon_col].notna() & df[value_col].notna()).to_numpy()
+    valid_positions = np.nonzero(valid)[0]
+
+    if len(valid_positions) > 0:
+        coords_deg = df.iloc[valid_positions][[lat_col, lon_col]].to_numpy(dtype=float)
+        coords_rad = np.radians(coords_deg)
+        values = df.iloc[valid_positions][value_col].to_numpy(dtype=float)
+
+        tree = BallTree(coords_rad, metric="haversine")
+        radius_rad = radius_km / EARTH_RADIUS_KM
+        neighbor_lists = tree.query_radius(coords_rad, r=radius_rad)
+
+        for k, neighbor_idx in enumerate(neighbor_lists):
+            neighbor_idx = neighbor_idx[neighbor_idx != k]  # exclude self
+            if len(neighbor_idx) == 0:
                 continue
-            d = haversine_km(row[lat_col], row[lon_col], other[lat_col], other[lon_col])
-            if d <= radius_km:
-                neighbor_values.append(other[value_col])
-        if neighbor_values:
-            s = pd.Series(neighbor_values)
-            means.append(s.mean())
-            medians.append(s.median())
-        else:
-            means.append(None)
-            medians.append(None)
-        counts.append(len(neighbor_values))
+            neighbor_vals = values[neighbor_idx]
+            orig_pos = valid_positions[k]
+            means[orig_pos] = float(neighbor_vals.mean())
+            medians[orig_pos] = float(np.median(neighbor_vals))
+            counts[orig_pos] = int(len(neighbor_vals))
 
-    df["avg_price_m2_within_3km_mean"] = means
-    df["avg_price_m2_within_3km_median"] = medians
-    df["n_neighbors_3km"] = counts
-    df["low_confidence_spatial"] = df["n_neighbors_3km"] < LOW_CONFIDENCE_NEIGHBOR_THRESHOLD
+    df = df.copy()
+    df[f"avg_price_m2_within_{label}_mean"] = means
+    df[f"avg_price_m2_within_{label}_median"] = medians
+    df[f"n_neighbors_{label}"] = counts
+    if label == "3km":
+        df["low_confidence_spatial"] = df["n_neighbors_3km"] < LOW_CONFIDENCE_NEIGHBOR_THRESHOLD
     return df
 
 
@@ -165,8 +184,35 @@ def _mall_dummies(lat, lon):
 
 
 def engineer_features(parsed_df, raw_df):
-    """Join parsed fields with raw lat/lon/fetched_at and compute all features."""
-    df = parsed_df.merge(raw_df[["source_row", "lat", "lon", "fetched_at"]], on="source_row", how="left")
+    """Join parsed fields with raw lat/lon/fetched_at and compute all features.
+
+    raw_df is deduped on source_row (keep first) before the join. The full
+    ~35k-row raw CSV has 5 source_row values appearing twice each (10 rows
+    total, all status=error, same url both times per pair -- a LinksParser
+    resume/retry artifact that re-appended the same failed url on a later
+    run rather than a parsing issue). An undeduped merge fans those 5
+    source_rows out 2x2=4-wide instead of 1-wide, inflating row count by
+    +10 (34766 -> 34776, confirmed on the first --full run before this
+    fix). Not present in the 16-row sample fixture.
+    """
+    raw_dedup = raw_df.drop_duplicates(subset="source_row", keep="first")
+    df = parsed_df.merge(raw_dedup[["source_row", "lat", "lon", "fetched_at"]], on="source_row", how="left")
+
+    # --- duplicate / relist dedup (EDA_PLAN.md section 4) ---
+    # Rows sharing an identical (lat, lon, area_total_m2, price_tenge)
+    # tuple are almost certainly the same physical unit relisted (price
+    # cut, bumped visibility) rather than independent comparables --
+    # counting them twice would double-weight that one unit in every
+    # group median and 3km-neighbor average. Confirmed on the full
+    # dataset: 4,165 such rows / ~2,630 duplicate groups
+    # (EDA_REPORT.md). User decision: drop outright (keep first by
+    # source_row), not merely flag. Rows missing any key field can't be
+    # matched and are kept as-is (no false-positive risk from NaN==NaN).
+    dedup_key = ["lat", "lon", "area_total_m2", "price_tenge"]
+    has_full_key = df[dedup_key].notna().all(axis=1)
+    is_dup = pd.Series(False, index=df.index)
+    is_dup.loc[has_full_key] = df.loc[has_full_key].duplicated(subset=dedup_key, keep="first")
+    df = df.loc[~is_dup].reset_index(drop=True)
 
     # --- core hedonic features ---
     df["price_m2"] = df["price_tenge"] / df["area_total_m2"]
@@ -225,7 +271,8 @@ def engineer_features(parsed_df, raw_df):
 
     df["grid_cell_id"] = df.apply(lambda r: _grid_cell_id(r["lat"], r["lon"]), axis=1)
 
-    df = compute_avg_price_m2_within_radius(df, radius_km=3.0)
+    df = compute_avg_price_m2_within_radius(df, radius_km=3.0, label="3km")
+    df = compute_avg_price_m2_within_radius(df, radius_km=1.0, label="1km")
 
     # --- group aggregates ---
     complex_agg = compute_group_aggregate(df[df["complex_name"].notna()], "complex_name", "price_m2", min_n=MIN_N_GROUP)
@@ -262,6 +309,7 @@ def run_sample():
     parsed_df = pd.read_csv(parsed_path, encoding="utf-8")
     raw_df = pd.read_csv(raw_path, encoding="utf-8")
 
+    n_before_dedup = len(parsed_df)
     features_df = engineer_features(parsed_df, raw_df)
     features_df.to_csv(out_path, index=False, encoding="utf-8")
 
@@ -272,6 +320,7 @@ def run_sample():
     n_complex_agg = features_df["complex_median_price_m2"].notna().sum()
     n_district_agg = features_df["district_median_price_m2"].notna().sum()
 
+    print(f"duplicate/relist rows dropped: {n_before_dedup - n_total}/{n_before_dedup}")
     print(f"wrote {n_total} feature rows to {out_path}")
     print(f"price_m2 computed: {n_price_m2}/{n_total}")
     print(f"n_neighbors_3km stats:\n{n_neighbors_summary}")
@@ -280,17 +329,84 @@ def run_sample():
     print(f"district_median_price_m2 present: {n_district_agg}/{n_total}")
 
 
+# ---------------------------------------------------------------------------
+# --full: real run against methodology/full_run/parsed_full.csv joined with
+# the raw AstanaLinksParserJune2026_parsed.csv (for lat/lon/fetched_at).
+# FIRST time the BallTree spatial join has run at full ~35k-row scale.
+# ---------------------------------------------------------------------------
+
+def run_full():
+    parsed_path = os.path.join(FULL_RUN_DIR, "parsed_full.csv")
+    out_path = os.path.join(FULL_RUN_DIR, "features_full.csv")
+
+    parsed_df = pd.read_csv(parsed_path, encoding="utf-8")
+    raw_df = pd.read_csv(FULL_RAW_CSV, encoding="utf-8")
+
+    n_before_dedup = len(parsed_df)
+    t0 = time.time()
+    features_df = engineer_features(parsed_df, raw_df)
+    elapsed_engineer = time.time() - t0
+    n_dropped_dup = n_before_dedup - len(features_df)
+
+    t1 = time.time()
+    features_df.to_csv(out_path, index=False, encoding="utf-8")
+    elapsed_write = time.time() - t1
+
+    n_total = len(features_df)
+    n_price_m2 = features_df["price_m2"].notna().sum()
+    n_neighbors_summary = features_df["n_neighbors_3km"].describe()
+    n_low_conf = features_df["low_confidence_spatial"].sum()
+    n_complex_agg = features_df["complex_median_price_m2"].notna().sum()
+    n_district_agg = features_df["district_median_price_m2"].notna().sum()
+    n_zero_neighbors = (features_df["n_neighbors_3km"] == 0).sum()
+    n_has_latlon = (features_df["lat"].notna() & features_df["lon"].notna()).sum()
+
+    lines = []
+    lines.append("feature_engineering.py --full")
+    lines.append(f"input: {parsed_path}")
+    lines.append(f"output: {out_path}")
+    lines.append(f"rows before dedup: {n_before_dedup}")
+    lines.append(f"duplicate/relist rows dropped (identical lat/lon/area/price): {n_dropped_dup}")
+    lines.append(f"total rows: {n_total}")
+    lines.append(f"rows with lat/lon: {n_has_latlon}/{n_total}")
+    lines.append(f"engineer_features() elapsed (incl. BallTree 3km spatial join): {elapsed_engineer:.2f}s")
+    lines.append(f"csv write elapsed: {elapsed_write:.2f}s")
+    lines.append("")
+    lines.append(f"price_m2 computed: {n_price_m2}/{n_total}")
+    lines.append(f"n_neighbors_3km stats:\n{n_neighbors_summary.to_string()}")
+    lines.append(f"rows with 0 neighbors within 3km (isolated): {n_zero_neighbors}/{n_total}")
+    lines.append(f"low_confidence_spatial (n_neighbors_3km < {LOW_CONFIDENCE_NEIGHBOR_THRESHOLD}): {n_low_conf}/{n_total}")
+    lines.append(f"complex_median_price_m2 present (complex_listing_count >= {MIN_N_GROUP}): {n_complex_agg}/{n_total}")
+    lines.append(f"district_median_price_m2 present (district_listing_count >= {MIN_N_GROUP}): {n_district_agg}/{n_total}")
+
+    report_path = os.path.join(FULL_RUN_DIR, "feature_full_report.txt")
+    with open(report_path, "w", encoding="utf-8") as f:
+        f.write("\n".join(lines) + "\n")
+
+    print(f"duplicate/relist rows dropped: {n_dropped_dup}/{n_before_dedup}")
+    print(f"wrote {n_total} feature rows to {out_path}")
+    print(f"engineer_features() elapsed: {elapsed_engineer:.2f}s (BallTree spatial join included)")
+    print(f"price_m2 computed: {n_price_m2}/{n_total}")
+    print(f"rows with 0 neighbors within 3km: {n_zero_neighbors}/{n_total}")
+    print(f"low_confidence_spatial: {n_low_conf}/{n_total}")
+    print(f"full report: {report_path}")
+
+
 def main():
     parser = argparse.ArgumentParser()
     parser.add_argument("--sample", action="store_true")
+    parser.add_argument("--full", action="store_true")
     args = parser.parse_args()
 
-    if not args.sample:
+    if not args.sample and not args.full:
         parser.print_help()
         return
 
     _haversine_selfcheck()
-    run_sample()
+    if args.sample:
+        run_sample()
+    if args.full:
+        run_full()
 
 
 if __name__ == "__main__":

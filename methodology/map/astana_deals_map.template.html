@@ -1,0 +1,913 @@
+<title>Astana Sweet Spots</title>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Golos+Text:wght@500;600;700&family=Manrope:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600&display=swap">
+<style>
+/* ---------- Leaflet core CSS, inlined (CSP allows only fonts.googleapis.com as an external stylesheet host) ---------- */
+.leaflet-pane,.leaflet-tile,.leaflet-marker-icon,.leaflet-marker-shadow,.leaflet-tile-container,.leaflet-pane>svg,.leaflet-pane>canvas,.leaflet-zoom-box,.leaflet-image-layer,.leaflet-layer{position:absolute;left:0;top:0}.leaflet-container{overflow:hidden;-webkit-tap-highlight-color:transparent}.leaflet-tile,.leaflet-marker-icon,.leaflet-marker-shadow{-webkit-user-select:none;-moz-user-select:none;user-select:none;-webkit-user-drag:none}.leaflet-tile::selection{background:transparent}.leaflet-safari .leaflet-tile{image-rendering:-webkit-optimize-contrast}.leaflet-safari .leaflet-tile-container{width:1600px;height:1600px;-webkit-transform-origin:0 0}.leaflet-marker-icon,.leaflet-marker-shadow{display:block}.leaflet-container .leaflet-overlay-pane svg,.leaflet-container .leaflet-marker-pane img,.leaflet-container .leaflet-shadow-pane img,.leaflet-container .leaflet-tile-pane img,.leaflet-container img.leaflet-image-layer,.leaflet-container .leaflet-tile{max-width:none!important;max-height:none!important}.leaflet-container.leaflet-touch-zoom{-ms-touch-action:pan-x pan-y;touch-action:pan-x pan-y}.leaflet-container.leaflet-touch-drag{-ms-touch-action:pinch-zoom;touch-action:none;touch-action:pinch-zoom}.leaflet-container.leaflet-touch-drag.leaflet-touch-zoom{-ms-touch-action:none;touch-action:none}.leaflet-tile{filter:inherit;visibility:hidden}.leaflet-tile-loaded{visibility:inherit}.leaflet-zoom-box{width:0;height:0;-moz-box-sizing:border-box;box-sizing:border-box;z-index:800}.leaflet-overlay-pane svg{-moz-user-select:none}.leaflet-pane{z-index:400}.leaflet-tile-pane{z-index:200}.leaflet-overlay-pane{z-index:400}.leaflet-shadow-pane{z-index:500}.leaflet-marker-pane{z-index:600}.leaflet-tooltip-pane{z-index:650}.leaflet-popup-pane{z-index:700}.leaflet-map-pane canvas{z-index:100}.leaflet-map-pane svg{z-index:200}.leaflet-vml-shape{width:1px;height:1px}.lvml{behavior:url(#default#VML);display:inline-block;position:absolute}.leaflet-control{position:relative;z-index:800;pointer-events:visiblePainted;pointer-events:auto}.leaflet-top,.leaflet-bottom{position:absolute;z-index:1000;pointer-events:none}.leaflet-top{top:0}.leaflet-right{right:0}.leaflet-bottom{bottom:0}.leaflet-left{left:0}.leaflet-control{float:left;clear:both}.leaflet-right .leaflet-control{float:right}.leaflet-top .leaflet-control{margin-top:10px}.leaflet-bottom .leaflet-control{margin-bottom:10px}.leaflet-left .leaflet-control{margin-left:10px}.leaflet-right .leaflet-control{margin-right:10px}.leaflet-fade-anim .leaflet-popup{opacity:0;-webkit-transition:opacity .2s linear;-moz-transition:opacity .2s linear;transition:opacity .2s linear}.leaflet-fade-anim .leaflet-map-pane .leaflet-popup{opacity:1}.leaflet-zoom-animated{-webkit-transform-origin:0 0;-ms-transform-origin:0 0;transform-origin:0 0}svg.leaflet-zoom-animated{will-change:transform}.leaflet-zoom-anim .leaflet-zoom-animated{-webkit-transition:-webkit-transform .25s cubic-bezier(0,0,.25,1);-moz-transition:-moz-transform .25s cubic-bezier(0,0,.25,1);transition:transform .25s cubic-bezier(0,0,.25,1)}.leaflet-zoom-anim .leaflet-tile,.leaflet-pan-anim .leaflet-tile{-webkit-transition:none;-moz-transition:none;transition:none}.leaflet-zoom-anim .leaflet-zoom-hide{visibility:hidden}.leaflet-interactive{cursor:pointer}.leaflet-grab{cursor:-webkit-grab;cursor:-moz-grab;cursor:grab}.leaflet-crosshair,.leaflet-crosshair .leaflet-interactive{cursor:crosshair}.leaflet-popup-pane,.leaflet-control{cursor:auto}.leaflet-dragging .leaflet-grab,.leaflet-dragging .leaflet-grab .leaflet-interactive,.leaflet-dragging .leaflet-marker-draggable{cursor:move;cursor:-webkit-grabbing;cursor:-moz-grabbing;cursor:grabbing}.leaflet-marker-icon.leaflet-interactive,.leaflet-image-layer.leaflet-interactive,.leaflet-pane>svg path.leaflet-interactive,svg.leaflet-image-layer.leaflet-interactive path{pointer-events:visiblePainted;pointer-events:auto}.leaflet-container{background:#ddd;outline-offset:1px}.leaflet-container a{color:#0078A8}.leaflet-zoom-box{border:2px dotted #38f;background:rgba(255,255,255,.5)}.leaflet-container a.leaflet-active{outline:2px solid orange}.leaflet-zoom-anim .leaflet-zoom-animated{transition-timing-function:linear}.leaflet-bar{box-shadow:0 1px 5px rgba(0,0,0,.65);border-radius:4px}.leaflet-bar a{background-color:#fff;border-bottom:1px solid #ccc;width:26px;height:26px;line-height:26px;display:block;text-align:center;text-decoration:none;color:black}.leaflet-bar a,.leaflet-control-layers-toggle{background-position:50% 50%;background-repeat:no-repeat;display:block}.leaflet-bar a:hover,.leaflet-bar a:focus{background-color:#f4f4f4}.leaflet-bar a:first-child{border-top-left-radius:4px;border-top-right-radius:4px}.leaflet-bar a:last-child{border-bottom-left-radius:4px;border-bottom-right-radius:4px;border-bottom:none}.leaflet-bar a.leaflet-disabled{cursor:default;background-color:#f4f4f4;color:#bbb}.leaflet-control-zoom-in,.leaflet-control-zoom-out{font:bold 18px 'Lucida Console',Monaco,monospace;text-indent:1px}.leaflet-touch .leaflet-control-zoom-in,.leaflet-touch .leaflet-control-zoom-out{font-size:22px}.leaflet-control-attribution{background:#fff;background:rgba(255,255,255,.8);margin:0}.leaflet-control-attribution a{text-decoration:none}.leaflet-control-attribution a:hover,.leaflet-control-attribution a:focus{text-decoration:underline}.leaflet-attribution-flag{display:inline!important;vertical-align:baseline!important;width:1em;height:.6669em}.leaflet-left .leaflet-control-scale{margin-left:5px}.leaflet-bottom .leaflet-control-scale{margin-bottom:5px}.leaflet-control-scale-line{border:2px solid #777;border-top:none;line-height:1.1;padding:2px 5px 1px;white-space:nowrap;-moz-box-sizing:content-box;box-sizing:content-box;background:rgba(255,255,255,.8);text-shadow:1px 1px #fff}.leaflet-control-scale-line:not(:first-child){border-top:2px solid #777;border-bottom:none;margin-top:-2px}.leaflet-control-scale-line:not(:first-child):not(:last-child){border-bottom:2px solid #777}.leaflet-touch .leaflet-bar{border:2px solid rgba(0,0,0,.2);background-clip:padding-box}.leaflet-popup{position:absolute;text-align:center;margin-bottom:20px}.leaflet-popup-content-wrapper{padding:1px;text-align:left;border-radius:12px}.leaflet-popup-content{margin:13px 24px 13px 20px;line-height:1.4}.leaflet-popup-content p{margin:.9em 0}.leaflet-popup-tip-container{width:40px;height:20px;position:absolute;left:50%;margin-top:-1px;margin-left:-20px;overflow:hidden;pointer-events:none}.leaflet-popup-tip{background:#fff;padding:1px}.leaflet-popup-content-wrapper,.leaflet-popup-tip{background:#fff;color:#333;box-shadow:0 3px 14px rgba(0,0,0,.4)}.leaflet-container a.leaflet-popup-close-button{position:absolute;top:0;right:0;border:none;text-align:center;width:24px;height:24px;font:16px/24px Tahoma,Verdana,sans-serif;color:#757575;text-decoration:none;background:transparent;z-index:19}.leaflet-container a.leaflet-popup-close-button:hover,.leaflet-container a.leaflet-popup-close-button:focus{color:#585858}.leaflet-popup-scrolled{overflow:auto}.leaflet-oldie .leaflet-popup-content-wrapper{-ms-zoom:1}.leaflet-oldie .leaflet-popup-tip{width:24px;margin:0 auto;-ms-filter:"progid:DXImageTransform.Microsoft.Matrix(M11=0.70710678, M12=0.70710678, M21=-0.70710678, M22=0.70710678)";filter:progid:DXImageTransform.Microsoft.Matrix(M11=0.70710678, M12=0.70710678, M21=-0.70710678, M22=0.70710678)}.leaflet-oldie .leaflet-control-zoom,.leaflet-oldie .leaflet-control-layers,.leaflet-oldie .leaflet-popup-content-wrapper,.leaflet-oldie .leaflet-popup-tip{border:1px solid #999}.leaflet-div-icon{background:#fff;border:1px solid #666}.leaflet-tooltip{position:absolute;padding:6px;background-color:#fff;border:1px solid #fff;border-radius:3px;color:#222;white-space:nowrap;-webkit-user-select:none;-moz-user-select:none;user-select:none;pointer-events:none;box-shadow:0 1px 3px rgba(0,0,0,.4)}.leaflet-tooltip.leaflet-clickable{cursor:pointer;pointer-events:auto}.leaflet-tooltip-top:before,.leaflet-tooltip-bottom:before,.leaflet-tooltip-left:before,.leaflet-tooltip-right:before{position:absolute;pointer-events:none;border:6px solid transparent;background:transparent;content:""}.leaflet-tooltip-bottom{margin-top:6px}.leaflet-tooltip-top{margin-top:-6px}.leaflet-tooltip-bottom:before,.leaflet-tooltip-top:before{left:50%;margin-left:-6px}.leaflet-tooltip-top:before{bottom:0;margin-bottom:-12px;border-top-color:#fff}.leaflet-tooltip-bottom:before{top:0;margin-top:-12px;border-bottom-color:#fff}.leaflet-tooltip-left{margin-left:-6px}.leaflet-tooltip-right{margin-left:6px}.leaflet-tooltip-left:before,.leaflet-tooltip-right:before{top:50%;margin-top:-6px}.leaflet-tooltip-left:before{right:0;margin-right:-12px;border-left-color:#fff}.leaflet-tooltip-right:before{left:0;margin-left:-12px;border-right-color:#fff}
+
+/* ---------- design tokens ---------- */
+:root{
+  --font-display:'Golos Text',system-ui,-apple-system,sans-serif;
+  --font-body:'Manrope',system-ui,-apple-system,sans-serif;
+  --font-mono:'JetBrains Mono',ui-monospace,Menlo,monospace;
+
+  --page:#f0efe9;
+  --surface-1:#f7f6f3;
+  --surface-2:#ffffff;
+  --surface-3:#eeece5;
+  --text-primary:#17181a;
+  --text-secondary:#5c5b57;
+  --text-muted:#8b8a84;
+  --border:rgba(20,18,10,0.11);
+  --border-strong:rgba(20,18,10,0.22);
+  --accent:#a8720f;
+  --accent-ink:#ffffff;
+  --accent-wash:rgba(168,114,15,0.12);
+  --shadow:0 8px 28px rgba(20,15,5,0.16);
+
+  --deal-good:#2a78d6;
+  --deal-bad:#e34948;
+  --deal-mid:#f0efec;
+
+  --status-good:#0ca30c;
+  --status-warn:#fab219;
+}
+@media (prefers-color-scheme:dark){
+  :root:not([data-theme="light"]){
+    --page:#0e1013;
+    --surface-1:#15171b;
+    --surface-2:#1c1f24;
+    --surface-3:#22262c;
+    --text-primary:#f2f1ed;
+    --text-secondary:#b9b8b2;
+    --text-muted:#84837c;
+    --border:rgba(255,255,255,0.09);
+    --border-strong:rgba(255,255,255,0.18);
+    --accent:#e8b84b;
+    --accent-ink:#221802;
+    --accent-wash:rgba(232,184,75,0.14);
+    --shadow:0 8px 32px rgba(0,0,0,0.55);
+    --deal-good:#3987e5;
+    --deal-bad:#e66767;
+    --deal-mid:#383835;
+    --status-good:#0ca30c;
+    --status-warn:#fab219;
+  }
+}
+:root[data-theme="dark"]{
+  --page:#0e1013;
+  --surface-1:#15171b;
+  --surface-2:#1c1f24;
+  --surface-3:#22262c;
+  --text-primary:#f2f1ed;
+  --text-secondary:#b9b8b2;
+  --text-muted:#84837c;
+  --border:rgba(255,255,255,0.09);
+  --border-strong:rgba(255,255,255,0.18);
+  --accent:#e8b84b;
+  --accent-ink:#221802;
+  --accent-wash:rgba(232,184,75,0.14);
+  --shadow:0 8px 32px rgba(0,0,0,0.55);
+  --deal-good:#3987e5;
+  --deal-bad:#e66767;
+  --deal-mid:#383835;
+}
+
+*{box-sizing:border-box}
+html,body{margin:0;height:100%}
+body{
+  background:var(--page);
+  color:var(--text-primary);
+  font-family:var(--font-body);
+  overflow:hidden;
+}
+.app{display:flex;flex-direction:column;height:100vh;width:100vw}
+
+/* ---------- top bar ---------- */
+.topbar{
+  display:flex;align-items:center;gap:18px;
+  padding:10px 18px;
+  background:var(--surface-1);
+  border-bottom:1px solid var(--border);
+  z-index:10;
+  flex-wrap:wrap;
+}
+.brand{display:flex;align-items:baseline;gap:9px;margin-right:6px}
+.brand h1{
+  font-family:var(--font-display);font-weight:700;font-size:18px;letter-spacing:-0.01em;margin:0;color:var(--text-primary);
+}
+.brand .sub{font-size:11.5px;color:var(--text-muted);font-weight:500}
+
+.filters{display:flex;align-items:center;gap:10px;flex-wrap:wrap;flex:1}
+.filter-group{display:flex;flex-direction:column;gap:3px}
+.filter-label{font-size:10px;text-transform:uppercase;letter-spacing:.06em;color:var(--text-muted);font-weight:600}
+.chipset{display:flex;gap:5px;flex-wrap:wrap}
+.chip{
+  font-family:var(--font-body);font-size:12px;font-weight:600;
+  padding:5px 10px;border-radius:999px;border:1px solid var(--border-strong);
+  background:var(--surface-2);color:var(--text-secondary);cursor:pointer;
+  transition:background .12s,color .12s,border-color .12s;
+  user-select:none;
+}
+.chip:hover{border-color:var(--accent)}
+.chip.active{background:var(--accent);border-color:var(--accent);color:var(--accent-ink)}
+.chip:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+
+.num-range{display:flex;align-items:center;gap:5px;font-family:var(--font-mono);font-size:12px}
+.num-range input[type=number]{
+  width:64px;font-family:var(--font-mono);font-size:12px;color:var(--text-primary);
+  background:var(--surface-2);border:1px solid var(--border-strong);border-radius:6px;
+  padding:5px 6px;-moz-appearance:textfield;
+}
+.num-range input[type=number]::-webkit-inner-spin-button,.num-range input[type=number]::-webkit-outer-spin-button{-webkit-appearance:none;margin:0}
+.num-range input[type=number]:focus{outline:2px solid var(--accent);outline-offset:1px;border-color:var(--accent)}
+.num-range span{color:var(--text-muted)}
+
+.toggle-row{display:flex;align-items:center;gap:14px}
+.toggle{display:flex;align-items:center;gap:6px;font-size:12px;font-weight:600;color:var(--text-secondary);cursor:pointer;user-select:none}
+.toggle input[type=checkbox]{accent-color:var(--accent);width:14px;height:14px}
+.toggle.disabled{opacity:.45;pointer-events:none}
+.n-input{
+  width:44px;font-family:var(--font-mono);font-size:11.5px;color:var(--text-primary);
+  background:var(--surface-2);border:1px solid var(--border-strong);border-radius:6px;padding:3px 5px;margin-left:2px;
+}
+
+.seg{display:flex;border:1px solid var(--border-strong);border-radius:8px;overflow:hidden}
+.seg button{
+  font-family:var(--font-body);font-size:12px;font-weight:600;color:var(--text-secondary);
+  background:var(--surface-2);border:none;padding:6px 11px;cursor:pointer;
+}
+.seg button+button{border-left:1px solid var(--border-strong)}
+.seg button.active{background:var(--accent);color:var(--accent-ink)}
+.seg button:hover:not(.active){background:var(--surface-3)}
+
+.reset-btn,.tool-btn{
+  font-family:var(--font-body);font-size:12px;font-weight:600;color:var(--text-secondary);
+  background:none;border:1px solid var(--border-strong);border-radius:8px;padding:6px 11px;cursor:pointer;
+  white-space:nowrap;
+}
+.reset-btn:hover,.tool-btn:hover{border-color:var(--accent);color:var(--accent)}
+.tool-btn.active{background:var(--accent);border-color:var(--accent);color:var(--accent-ink)}
+.tool-btn.active:hover{color:var(--accent-ink)}
+.clear-area-btn{
+  font-family:var(--font-body);font-size:11.5px;font-weight:600;color:var(--accent);
+  background:none;border:none;cursor:pointer;text-decoration:underline;padding:0;display:none;
+}
+.clear-area-btn.show{display:inline}
+
+.count-pill{
+  font-family:var(--font-mono);font-size:12px;font-weight:600;
+  background:var(--accent-wash);color:var(--accent);
+  border-radius:8px;padding:6px 10px;white-space:nowrap;
+}
+
+/* ---------- body: map + side panel ---------- */
+.body-row{flex:1;display:flex;min-height:0}
+.map-wrap{flex:1;position:relative;min-width:0}
+#map{position:absolute;inset:0;background:var(--surface-3)}
+#map-fallback-note{
+  position:absolute;top:10px;left:50%;transform:translateX(-50%);
+  background:var(--surface-2);border:1px solid var(--border-strong);border-radius:8px;
+  padding:6px 12px;font-size:11.5px;color:var(--text-muted);box-shadow:var(--shadow);
+  display:none;z-index:500;
+}
+
+.layer-toggle{
+  position:absolute;top:12px;right:12px;z-index:500;
+  background:var(--surface-2);border:1px solid var(--border);border-radius:10px;
+  box-shadow:var(--shadow);padding:8px 10px;display:flex;gap:12px;
+}
+
+.legend{
+  position:absolute;left:12px;bottom:12px;z-index:500;
+  background:var(--surface-2);border:1px solid var(--border);border-radius:10px;
+  box-shadow:var(--shadow);padding:11px 13px;width:230px;
+}
+.legend h3{margin:0 0 8px;font-family:var(--font-display);font-size:11.5px;font-weight:700;color:var(--text-primary)}
+.legend-gradient{height:10px;border-radius:5px;background:linear-gradient(90deg,var(--deal-good),var(--deal-mid),var(--deal-bad));margin-bottom:5px}
+.legend-ticks{display:flex;justify-content:space-between;font-family:var(--font-mono);font-size:10px;color:var(--text-muted)}
+.legend-note{margin-top:8px;font-size:10.5px;color:var(--text-muted);line-height:1.45}
+.legend-note b{color:var(--text-secondary)}
+.legend-dot-row{display:flex;align-items:center;gap:6px;margin-top:7px;font-size:10.5px;color:var(--text-muted)}
+.legend-dot{width:9px;height:9px;border-radius:50%;border:1.5px solid var(--text-muted);flex:none}
+.legend-divider{height:1px;background:var(--border);margin:10px 0}
+
+/* ---------- lasso draw canvas ---------- */
+#lasso-canvas{position:absolute;inset:0;z-index:600;cursor:crosshair;display:none;touch-action:none}
+.map-wrap.lasso-active #lasso-canvas{display:block}
+.map-wrap.lasso-active #map{cursor:crosshair}
+
+/* ---------- sweet-spot highlight halo (SVG-rendered so CSS animation applies) ---------- */
+.sweet-spot-halo{animation:pulseHalo 1.7s ease-in-out infinite}
+@keyframes pulseHalo{0%,100%{opacity:1}50%{opacity:.55}}
+@media (prefers-reduced-motion:reduce){.sweet-spot-halo{animation:none;opacity:.55}}
+.selection-ring{opacity:.95}
+
+/* ---------- side panel: selection + top sweet spots ---------- */
+.side-panel{
+  width:300px;flex:none;background:var(--surface-1);border-left:1px solid var(--border);
+  display:flex;flex-direction:column;min-height:0;
+}
+.selection-card{
+  display:none;padding:14px 16px;border-bottom:1px solid var(--border-strong);background:var(--surface-2);
+  position:relative;
+}
+.selection-card.show{display:block}
+.selection-card .close-btn{
+  position:absolute;top:10px;right:10px;width:22px;height:22px;border-radius:6px;border:none;
+  background:none;color:var(--text-muted);cursor:pointer;font-size:14px;line-height:1;
+}
+.selection-card .close-btn:hover{background:var(--surface-3);color:var(--text-primary)}
+.selection-card .eyebrow{font-size:10px;text-transform:uppercase;letter-spacing:.06em;color:var(--text-muted);font-weight:600;margin-bottom:5px}
+.selection-card .popup-title{margin-bottom:4px}
+.selection-card .popup-link{margin-top:2px}
+.side-panel h2{
+  font-family:var(--font-display);font-size:13px;font-weight:700;margin:0;
+  padding:14px 16px 10px;color:var(--text-primary);
+  border-bottom:1px solid var(--border);
+}
+.side-panel h2 .n{color:var(--text-muted);font-weight:500;font-family:var(--font-mono);font-size:11px}
+.deal-list{overflow-y:auto;flex:1}
+.deal-row{
+  padding:10px 16px;border-bottom:1px solid var(--border);cursor:pointer;
+  display:flex;flex-direction:column;gap:3px;
+}
+.deal-row:hover{background:var(--surface-2)}
+.deal-row .top-line{display:flex;justify-content:space-between;align-items:baseline;gap:8px}
+.deal-row .complex{font-size:12.5px;font-weight:600;color:var(--text-primary);overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.deal-row .pct{font-family:var(--font-mono);font-size:12px;font-weight:700;flex:none}
+.deal-row .meta{font-size:11px;color:var(--text-muted);font-family:var(--font-mono)}
+
+/* ---------- popup ---------- */
+.leaflet-popup-content-wrapper{background:var(--surface-2);color:var(--text-primary);border-radius:10px;box-shadow:var(--shadow)}
+.leaflet-popup-tip{background:var(--surface-2)}
+.leaflet-popup-content{margin:12px 16px;font-family:var(--font-body)}
+.popup-title{font-family:var(--font-display);font-weight:700;font-size:14px;margin-bottom:6px;color:var(--text-primary)}
+.popup-price{font-family:var(--font-mono);font-size:16px;font-weight:600;margin-bottom:2px}
+.popup-pm2{font-family:var(--font-mono);font-size:11.5px;color:var(--text-muted);margin-bottom:8px}
+.popup-grid{display:grid;grid-template-columns:auto auto;gap:2px 12px;font-size:12px;color:var(--text-secondary);margin-bottom:8px}
+.popup-grid b{color:var(--text-primary);font-weight:600}
+.popup-signal{
+  border-radius:8px;padding:7px 9px;font-size:12px;font-weight:600;margin-bottom:9px;
+}
+.popup-signal.low-conf{background:var(--surface-3);color:var(--text-muted);font-weight:500}
+.popup-link{
+  display:inline-block;font-size:12.5px;font-weight:700;color:var(--accent-ink);
+  background:var(--accent);padding:6px 12px;border-radius:7px;text-decoration:none;
+}
+.popup-link:hover{opacity:.88}
+
+.footer-meta{
+  position:absolute;right:12px;bottom:12px;z-index:500;
+  font-family:var(--font-mono);font-size:10px;color:var(--text-muted);
+  background:var(--surface-2);border:1px solid var(--border);border-radius:8px;
+  padding:5px 9px;box-shadow:var(--shadow);
+}
+
+@media (max-width:860px){
+  .side-panel{display:none}
+  .legend{width:180px}
+}
+</style>
+
+<div class="app">
+  <div class="topbar">
+    <div class="brand">
+      <h1>Astana Sweet Spots</h1>
+      <span class="sub">price vs. 3&nbsp;km neighborhood</span>
+    </div>
+
+    <div class="filters">
+      <div class="filter-group">
+        <span class="filter-label">District</span>
+        <div class="chipset" id="district-chips"></div>
+      </div>
+
+      <div class="filter-group">
+        <span class="filter-label">Rooms</span>
+        <div class="chipset" id="rooms-chips"></div>
+      </div>
+
+      <div class="filter-group">
+        <span class="filter-label">Price, &#8376;M</span>
+        <div class="num-range">
+          <input type="number" id="price-min" step="0.5" /><span>&ndash;</span><input type="number" id="price-max" step="0.5" />
+        </div>
+      </div>
+
+      <div class="filter-group">
+        <span class="filter-label">Area, m&sup2;</span>
+        <div class="num-range">
+          <input type="number" id="area-min" step="1" /><span>&ndash;</span><input type="number" id="area-max" step="1" />
+        </div>
+      </div>
+
+      <div class="filter-group">
+        <span class="filter-label">Neighborhood radius</span>
+        <div class="seg" id="radius-seg">
+          <button data-radius="3km" class="active">3&nbsp;km</button>
+          <button data-radius="1km">1&nbsp;km</button>
+        </div>
+      </div>
+
+      <div class="filter-group">
+        <span class="filter-label">&nbsp;</span>
+        <div class="toggle-row">
+          <label class="toggle" id="highlight-toggle-label" title="Rings the N cheapest listings vs. their neighborhood average, among what's currently filtered/shown."><input type="checkbox" id="highlight-top" /> Highlight top <input type="number" id="highlight-n" class="n-input" value="30" min="5" max="300" step="5" /></label>
+        </div>
+      </div>
+
+      <div class="filter-group">
+        <span class="filter-label">&nbsp;</span>
+        <div class="toggle-row">
+          <label class="toggle" title="Fewer than 3 comparable listings inside the selected radius, so the neighborhood average -- and this listing's deal score -- isn't statistically reliable. Hidden by default."><input type="checkbox" id="show-low-conf" /> Low-confidence</label>
+          <button class="tool-btn" id="lasso-btn" title="Draw a freehand area on the map to filter to just those listings">Select area</button>
+          <button class="clear-area-btn" id="clear-area-btn">Clear area</button>
+          <button class="reset-btn" id="reset-filters">Reset</button>
+        </div>
+      </div>
+    </div>
+
+    <span class="count-pill" id="count-pill">&mdash;</span>
+  </div>
+
+  <div class="body-row">
+    <div class="map-wrap" id="map-wrap">
+      <div id="map"></div>
+      <canvas id="lasso-canvas"></canvas>
+      <div id="map-fallback-note">Basemap image unavailable &mdash; showing a plain coordinate view.</div>
+
+      <div class="layer-toggle">
+        <label class="toggle"><input type="checkbox" id="layer-dots" checked /> Dots</label>
+        <label class="toggle"><input type="checkbox" id="layer-heat" checked /> Heatmap</label>
+      </div>
+
+      <div class="legend">
+        <h3 id="legend-dot-title">Dots: price vs. 3&nbsp;km neighborhood</h3>
+        <div class="legend-gradient" id="legend-dot-gradient"></div>
+        <div class="legend-ticks" id="legend-dot-ticks"><span>&minus;35%</span><span>0%</span><span>+35%</span></div>
+        <div class="legend-note" id="legend-dot-note">Color = how a listing's price/m&sup2; compares to every other listing within 3&nbsp;km. Blue = below average (better deal), red = above.</div>
+        <div class="legend-dot-row"><span class="legend-dot"></span> hollow = too few nearby comparables (low confidence)</div>
+        <div class="legend-divider"></div>
+        <h3>Heatmap: price level vs. city</h3>
+        <div class="legend-gradient" id="legend-heat-gradient"></div>
+        <div class="legend-ticks"><span>&minus;50%</span><span>city median</span><span>+50%</span></div>
+        <div class="legend-note">Local average price/m&sup2; (kernel-smoothed) vs. the city-wide median. Redder = pricier area, bluer = cheaper &mdash; independent of the dot ranking above.</div>
+      </div>
+
+      <div class="footer-meta" id="footer-meta"></div>
+    </div>
+
+    <div class="side-panel">
+      <div class="selection-card" id="selection-card"></div>
+      <h2>Top sweet spots <span class="n" id="deal-list-count"></span></h2>
+      <div class="deal-list" id="deal-list"></div>
+    </div>
+  </div>
+</div>
+
+<script id="map-data" type="application/json">__MAP_DATA_JSON__</script>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.js" crossorigin="anonymous"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet.heat/0.2.0/leaflet-heat.js" crossorigin="anonymous"></script>
+<script>
+(function(){
+  "use strict";
+
+  function showDebugError(label, e){
+    var el = document.createElement('div');
+    el.style.cssText = 'position:fixed;top:8px;left:8px;right:8px;z-index:99999;background:#3a0d0d;color:#ffb3b3;font-family:monospace;font-size:12px;padding:10px;border-radius:8px;white-space:pre-wrap;max-height:40vh;overflow:auto;box-shadow:0 4px 20px rgba(0,0,0,.5)';
+    el.textContent = label + ': ' + (e && e.message ? e.message : e) + (e && e.stack ? '\n' + e.stack : '');
+    document.body.appendChild(el);
+  }
+  window.onerror = function(msg, src, line, col, err){ showDebugError('window.onerror', err || msg); return false; };
+
+  try {
+
+  var DATA = JSON.parse(document.getElementById('map-data').textContent);
+  var ROWS = DATA.rows; // [id,lat,lon,price_k,area,build_year,floor,floor_total,rooms_idx,cond_idx,btype_idx,district_idx,complex_idx,spatial_pm_3km,reliable_3km,n_neighbors_3km,spatial_pm_1km,reliable_1km,n_neighbors_1km]
+  var F = {ID:0,LAT:1,LON:2,PRICE_K:3,AREA:4,BUILD_YEAR:5,FLOOR:6,FLOOR_TOTAL:7,ROOMS:8,COND:9,BTYPE:10,DISTRICT:11,COMPLEX:12,
+    SPATIAL_PM_3KM:13,RELIABLE_3KM:14,NEIGHBORS_3KM:15,SPATIAL_PM_1KM:16,RELIABLE_1KM:17,NEIGHBORS_1KM:18};
+  var CLAMP = DATA.meta.spatial_pct_clamp; // 0.35
+  var HEAT_CLAMP = DATA.meta.heat_pct_clamp; // 0.5
+  var CITY_MEDIAN = DATA.meta.city_median_price_m2;
+
+  // ---------- active-radius accessors (3km/1km toggle) ----------
+  function spatialPM(r){ return state.radius==='3km' ? r[F.SPATIAL_PM_3KM] : r[F.SPATIAL_PM_1KM]; }
+  function isReliable(r){ return (state.radius==='3km' ? r[F.RELIABLE_3KM] : r[F.RELIABLE_1KM]) === 1; }
+  function neighborCount(r){ return state.radius==='3km' ? r[F.NEIGHBORS_3KM] : r[F.NEIGHBORS_1KM]; }
+
+  // ---------- point-in-polygon (ray casting; lat/lon as y/x, fine at city scale) ----------
+  function pointInPolygon(lat, lon, poly){
+    var inside = false;
+    for(var i=0,j=poly.length-1;i<poly.length;j=i++){
+      var yi=poly[i][0], xi=poly[i][1], yj=poly[j][0], xj=poly[j][1];
+      var intersect = ((yi>lat)!==(yj>lat)) && (lon < (xj-xi)*(lat-yi)/(yj-yi)+xi);
+      if(intersect) inside = !inside;
+    }
+    return inside;
+  }
+
+  // ---------- price/area domain for sliders ----------
+  var priceVals = ROWS.map(function(r){return r[F.PRICE_K];}).filter(function(v){return v!=null;});
+  var areaVals = ROWS.map(function(r){return r[F.AREA];}).filter(function(v){return v!=null;});
+  var PRICE_MIN = Math.floor(Math.min.apply(null,priceVals)/1000);
+  var PRICE_MAX = Math.ceil(Math.max.apply(null,priceVals)/1000);
+  var AREA_MIN = Math.floor(Math.min.apply(null,areaVals));
+  var AREA_MAX = Math.ceil(Math.max.apply(null,areaVals));
+
+  var state = {
+    districts: new Set(), // empty = all
+    rooms: new Set(),
+    priceMin: PRICE_MIN, priceMax: PRICE_MAX,
+    areaMin: AREA_MIN, areaMax: AREA_MAX,
+    showLowConf: false,
+    radius: '3km', // toggles the dot-ranking neighborhood radius (3km/1km)
+    highlightTop: false, highlightN: 30,
+    areaPolygon: null, // lasso-selected area, array of [lat,lon], or null
+    selectedId: null,
+  };
+
+  // ---------- color scale ----------
+  function lerp(a,b,t){return a+(b-a)*t;}
+  function hexToRgb(h){h=h.replace('#','');return [parseInt(h.substring(0,2),16),parseInt(h.substring(2,4),16),parseInt(h.substring(4,6),16)];}
+  function rgbToHex(rgb){return '#'+rgb.map(function(v){return Math.round(v).toString(16).padStart(2,'0');}).join('');}
+  var css = getComputedStyle(document.documentElement);
+  function tok(name){return css.getPropertyValue(name).trim();}
+  function dealColor(pm){
+    // pm: permille, e.g. -150 = -15%. Diverging: good(<0) .. mid(0) .. bad(>0), clamped at CLAMP*1000
+    if(pm==null) return tok('--text-muted');
+    var clampPm = CLAMP*1000;
+    var t = Math.max(-1,Math.min(1, pm/clampPm)); // -1..1
+    var good = hexToRgb(tok('--deal-good')), bad = hexToRgb(tok('--deal-bad')), mid = hexToRgb(tok('--deal-mid'));
+    if(t<0){ return rgbToHex([0,1,2].map(function(i){return lerp(mid[i],good[i], -t);})); }
+    return rgbToHex([0,1,2].map(function(i){return lerp(mid[i],bad[i], t);}));
+  }
+
+  // ---------- lookups for labels ----------
+  function districtName(i){return i>=0? DATA.districts[i] : '—';}
+  function roomsName(i){return i>=0? DATA.rooms_buckets[i] : '—';}
+  function condName(i){
+    if(i<0) return '—';
+    var map = {rough:'rough finish', fresh_renovation:'fresh renovation', needs_renovation:'needs renovation', unknown:'condition unknown'};
+    return map[DATA.conditions[i]] || DATA.conditions[i];
+  }
+  function complexName(i){return i>=0 && DATA.complexes[i] ? DATA.complexes[i][0] : null;}
+
+  // ---------- filtering ----------
+  function passesFilter(r){
+    if(state.districts.size && !state.districts.has(r[F.DISTRICT])) return false;
+    if(state.rooms.size && !state.rooms.has(r[F.ROOMS])) return false;
+    var priceM = r[F.PRICE_K]!=null ? r[F.PRICE_K]/1000 : null;
+    if(priceM!=null && (priceM < state.priceMin || priceM > state.priceMax)) return false;
+    if(r[F.AREA]!=null && (r[F.AREA] < state.areaMin || r[F.AREA] > state.areaMax)) return false;
+    if(!state.showLowConf && !isReliable(r)) return false;
+    if(state.areaPolygon && !pointInPolygon(r[F.LAT], r[F.LON], state.areaPolygon)) return false;
+    return true;
+  }
+
+  // ---------- Leaflet map ----------
+  var ASTANA_CENTER = [51.128, 71.430];
+
+  // Force a synchronous layout pass before Leaflet reads the container's
+  // size. Inside the sandboxed artifact iframe, the flex layout can still
+  // be unresolved (0x0) at this point in synchronous script execution,
+  // which crashes leaflet.heat's canvas sizing (getImageData IndexSizeError:
+  // "source width is 0") and halts the rest of this script.
+  document.getElementById('map').getBoundingClientRect();
+
+  var map = L.map('map', {preferCanvas:true, zoomControl:true}).setView(ASTANA_CENTER, 12);
+  map.invalidateSize();
+  var canvasRenderer = L.canvas({padding:0.5});
+
+  var isDark = function(){
+    var stamp = document.documentElement.getAttribute('data-theme');
+    if(stamp==='dark') return true;
+    if(stamp==='light') return false;
+    return window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches;
+  };
+
+  // Real basemap imagery, baked in at build time (see build_basemap_image.py)
+  // and embedded as a data: URI -- the artifact sandbox's CSP blocks ANY
+  // live external tile fetch (OSM, CARTO, Esri, Google Maps all fail the
+  // same way at runtime; this is not CARTO- or API-key-specific), so a
+  // static image is the only basemap that can render here at all.
+  var BASEMAP_SRC = "__BASEMAP_IMAGE_DATA_URI__";
+  var BASEMAP_BOUNDS = __BASEMAP_BOUNDS_JSON__;
+  var basemapBounds = L.latLngBounds([BASEMAP_BOUNDS.south, BASEMAP_BOUNDS.west], [BASEMAP_BOUNDS.north, BASEMAP_BOUNDS.east]);
+  // Plain opacity only for dark mode -- a CSS filter chain (invert/hue-
+  // rotate/contrast/saturate) on a large raster image is cheap to
+  // composite in a normal top-level page but was pathologically slow
+  // (multi-second render hang) inside the artifact's sandboxed iframe,
+  // so it's deliberately avoided here.
+  var basemapLayer = L.imageOverlay(BASEMAP_SRC, basemapBounds, {
+    opacity: isDark() ? 0.42 : 0.92,
+    attribution: '&copy; OpenStreetMap contributors',
+  });
+  basemapLayer.addTo(map);
+  basemapLayer.on('error', function(){ document.getElementById('map-fallback-note').style.display = 'block'; });
+
+  var svgRenderer = L.svg({padding:0.5});
+  var markerLayer = L.layerGroup();
+  var haloLayer = L.layerGroup().addTo(map);
+  var selectionLayer = L.layerGroup().addTo(map);
+  var markers = [];
+
+  function markerStyle(r){
+    var rel = isReliable(r);
+    var pm = spatialPM(r);
+    return {
+      weight: rel ? 1 : 1.2,
+      color: rel ? dealColor(pm) : tok('--text-muted'),
+      fillColor: dealColor(pm),
+      fillOpacity: rel ? 0.8 : 0,
+      opacity: 0.9,
+    };
+  }
+
+  ROWS.forEach(function(r){
+    var m = L.circleMarker([r[F.LAT], r[F.LON]], Object.assign({renderer: canvasRenderer, radius: 4.5}, markerStyle(r)));
+    m._row = r;
+    m.on('click', function(){ showPopup(m); selectRow(r); });
+    markers.push(m);
+  });
+
+  function restyleMarkers(){
+    markers.forEach(function(m){ m.setStyle(markerStyle(m._row)); });
+  }
+
+  function buildDetailHtml(r){
+    var priceStr = r[F.PRICE_K]!=null ? (r[F.PRICE_K]/1000).toLocaleString('en-US',{maximumFractionDigits:1}) + 'M ₸' : '—';
+    var pm2 = (r[F.PRICE_K]!=null && r[F.AREA]) ? Math.round(r[F.PRICE_K]*1000/r[F.AREA]).toLocaleString('en-US') : '—';
+    var cn = complexName(r[F.COMPLEX]);
+    var title = cn || 'Standalone listing';
+    var radiusLabel = state.radius==='3km' ? '3km' : '1km';
+    var pm = spatialPM(r);
+    var signalHtml;
+    if(pm==null){
+      signalHtml = '<div class="popup-signal low-conf">No nearby comparables &mdash; spatial score unavailable</div>';
+    } else {
+      var pct = pm/10; // permille -> %
+      var clamped = Math.abs(pm) >= CLAMP*1000;
+      var dir = pct < 0 ? 'below' : 'above';
+      var label = Math.abs(pct).toFixed(1) + '% ' + dir + ' its ' + radiusLabel + ' neighborhood avg' + (clamped? ' (clamped)':'');
+      var bg = dealColor(pm);
+      var rel = isReliable(r);
+      var cls = rel ? '' : ' low-conf';
+      signalHtml = '<div class="popup-signal' + cls + '" style="' + (rel ? ('background:'+bg+'22;color:'+bg) : '') + '">' + label +
+        (rel ? '' : ' &mdash; low confidence') + '<br><span style="font-weight:400;opacity:.8">based on ' + neighborCount(r) + ' nearby listings</span></div>';
+    }
+    return ''
+      + '<div class="popup-title">' + title + '</div>'
+      + '<div class="popup-price">' + priceStr + '</div>'
+      + '<div class="popup-pm2">' + pm2 + ' ₸/m&sup2;</div>'
+      + '<div class="popup-grid">'
+      +   '<span>District</span><b>' + districtName(r[F.DISTRICT]) + '</b>'
+      +   '<span>Area</span><b>' + (r[F.AREA]!=null? r[F.AREA]+' m²':'—') + '</b>'
+      +   '<span>Rooms</span><b>' + roomsName(r[F.ROOMS]) + '</b>'
+      +   '<span>Floor</span><b>' + (r[F.FLOOR]!=null? r[F.FLOOR]+'/'+r[F.FLOOR_TOTAL] : '—') + '</b>'
+      +   '<span>Built</span><b>' + (r[F.BUILD_YEAR]!=null? r[F.BUILD_YEAR] : '—') + '</b>'
+      +   '<span>Condition</span><b>' + condName(r[F.COND]) + '</b>'
+      + '</div>'
+      + signalHtml
+      + '<a class="popup-link" href="https://krisha.kz/a/show/' + r[F.ID] + '" target="_blank" rel="noopener">View on krisha.kz &rarr;</a>';
+  }
+
+  function showPopup(m){
+    // autoPan:false -- an animated pan on every click, combined with the
+    // 31k-marker canvas layer and dual heat layers, was pathologically
+    // slow to repaint inside the artifact's sandboxed iframe.
+    L.popup({maxWidth:280, autoPan:false}).setLatLng(m.getLatLng()).setContent(buildDetailHtml(m._row)).openOn(map);
+  }
+
+  function selectRow(r){
+    state.selectedId = r[F.ID];
+    selectionLayer.clearLayers();
+    L.circleMarker([r[F.LAT], r[F.LON]], {
+      renderer: svgRenderer, radius: 11, weight: 3, color: tok('--text-primary'),
+      fillOpacity: 0, className: 'selection-ring',
+    }).addTo(selectionLayer);
+    var card = document.getElementById('selection-card');
+    card.classList.add('show');
+    card.innerHTML = '<button class="close-btn" id="selection-close" aria-label="Close">&times;</button><div class="eyebrow">Selected</div>' + buildDetailHtml(r);
+    document.getElementById('selection-close').addEventListener('click', clearSelection);
+  }
+  function clearSelection(){
+    state.selectedId = null;
+    selectionLayer.clearLayers();
+    document.getElementById('selection-card').classList.remove('show');
+  }
+  map.on('click', function(){
+    if(!document.getElementById('map-wrap').classList.contains('lasso-active')) clearSelection();
+  });
+
+  // Heatmap: LOCAL PRICE LEVEL vs. the city-wide median price/m2 -- a
+  // distinct signal from the dots (which rank a listing against its own
+  // neighborhood). Two stacked heat layers (cold=below city median,
+  // hot=above) since leaflet.heat has no native diverging gradient; each
+  // point's own price/m2 contributes, and the kernel blur does the "local
+  // area average" smoothing.
+  var heatLayerCold = L.heatLayer([], {radius:30, blur:34, maxZoom:15, max:1.0,
+    gradient:{0.0:'rgba(0,0,0,0)', 1.0: tok('--deal-good')}});
+  var heatLayerHot = L.heatLayer([], {radius:30, blur:34, maxZoom:15, max:1.0,
+    gradient:{0.0:'rgba(0,0,0,0)', 1.0: tok('--deal-bad')}});
+
+  // Kernel-blur smoothing makes the heat surface look the same whether
+  // every point contributes or just a representative sample -- cap the
+  // per-layer point count so heat redraws stay cheap even on a slow
+  // renderer (a systematic stride, not random, so it's deterministic).
+  var HEAT_POINT_CAP = 5000;
+  function downsample(points){
+    if(points.length <= HEAT_POINT_CAP) return points;
+    var stride = Math.ceil(points.length / HEAT_POINT_CAP);
+    var out = [];
+    for(var i=0;i<points.length;i+=stride) out.push(points[i]);
+    return out;
+  }
+
+  function refresh(){
+    markerLayer.clearLayers();
+    var coldPoints = [], hotPoints = [];
+    var shownCount = 0;
+    var shownRows = [];
+    markers.forEach(function(m){
+      var r = m._row;
+      if(!passesFilter(r)) return;
+      shownCount++;
+      shownRows.push(r);
+      markerLayer.addLayer(m);
+      var pm2 = (r[F.PRICE_K]!=null && r[F.AREA]) ? (r[F.PRICE_K]*1000/r[F.AREA]) : null;
+      if(pm2!=null && CITY_MEDIAN){
+        var devFrac = pm2/CITY_MEDIAN - 1;
+        var w = Math.min(1, Math.abs(devFrac)/HEAT_CLAMP);
+        if(devFrac >= 0) hotPoints.push([r[F.LAT], r[F.LON], w]);
+        else coldPoints.push([r[F.LAT], r[F.LON], w]);
+      }
+    });
+    heatLayerCold.setLatLngs(downsample(coldPoints));
+    heatLayerHot.setLatLngs(downsample(hotPoints));
+    document.getElementById('count-pill').textContent = shownCount.toLocaleString('en-US') + ' listings shown';
+    renderDealList(shownRows);
+    renderHighlights(shownRows);
+  }
+
+  function renderDealList(shownRows){
+    var filtered = shownRows.filter(function(r){return spatialPM(r)!=null;})
+      .sort(function(a,b){return spatialPM(a)-spatialPM(b);})
+      .slice(0,40);
+    var list = document.getElementById('deal-list');
+    list.innerHTML = '';
+    document.getElementById('deal-list-count').textContent = filtered.length ? ('top '+filtered.length) : '';
+    filtered.forEach(function(r){
+      var row = document.createElement('div');
+      row.className = 'deal-row';
+      var pct = (spatialPM(r)/10).toFixed(1);
+      var cn = complexName(r[F.COMPLEX]) || 'Standalone';
+      row.innerHTML = '<div class="top-line"><span class="complex">'+cn+'</span><span class="pct" style="color:'+dealColor(spatialPM(r))+'">'+pct+'%</span></div>'
+        + '<div class="meta">'+districtName(r[F.DISTRICT])+' · '+(r[F.PRICE_K]!=null?(r[F.PRICE_K]/1000).toFixed(1):'—')+'M ₸ · '+(r[F.AREA]||'—')+' m²</div>';
+      row.addEventListener('click', function(){
+        var target = markers.find(function(m){return m._row===r;});
+        if(target){ map.flyTo(target.getLatLng(), 15, {duration:0.6}); setTimeout(function(){showPopup(target); selectRow(r);}, 650); }
+      });
+      list.appendChild(row);
+    });
+  }
+
+  function renderHighlights(shownRows){
+    haloLayer.clearLayers();
+    if(!state.highlightTop) return;
+    var top = shownRows.filter(function(r){ return spatialPM(r)!=null && isReliable(r); })
+      .sort(function(a,b){ return spatialPM(a)-spatialPM(b); })
+      .slice(0, state.highlightN);
+    top.forEach(function(r){
+      L.circleMarker([r[F.LAT], r[F.LON]], {
+        renderer: svgRenderer, radius: 12, weight: 3.5, color: tok('--accent'),
+        fillColor: tok('--accent'), fillOpacity: 0.16, className: 'sweet-spot-halo',
+        interactive: false,
+      }).addTo(haloLayer);
+    });
+  }
+
+  markerLayer.addTo(map);
+  // Extra guard specifically for leaflet.heat: it throws synchronously if
+  // the map container still reports zero size (see the getBoundingClientRect
+  // note above) rather than degrading gracefully, so double-check right
+  // before adding it and retry on the next frame if needed.
+  if(map.getSize().x > 0 && map.getSize().y > 0){
+    heatLayerCold.addTo(map); heatLayerHot.addTo(map);
+  } else {
+    requestAnimationFrame(function(){ map.invalidateSize(); heatLayerCold.addTo(map); heatLayerHot.addTo(map); });
+  }
+
+  document.getElementById('layer-dots').addEventListener('change', function(e){
+    if(e.target.checked) markerLayer.addTo(map); else map.removeLayer(markerLayer);
+  });
+  document.getElementById('layer-heat').addEventListener('change', function(e){
+    if(e.target.checked){ heatLayerCold.addTo(map); heatLayerHot.addTo(map); }
+    else { map.removeLayer(heatLayerCold); map.removeLayer(heatLayerHot); }
+  });
+
+  // ---------- lasso area-select tool ----------
+  var mapWrapEl = document.getElementById('map-wrap');
+  var lassoCanvas = document.getElementById('lasso-canvas');
+  var lassoCtx = lassoCanvas.getContext('2d');
+  var lassoBtn = document.getElementById('lasso-btn');
+  var clearAreaBtn = document.getElementById('clear-area-btn');
+  var lassoDrawing = false, lassoPoints = [];
+  var areaOverlayLayer = null;
+
+  function resizeLassoCanvas(){
+    var rect = document.getElementById('map').getBoundingClientRect();
+    lassoCanvas.width = rect.width;
+    lassoCanvas.height = rect.height;
+  }
+  function setLassoMode(on){
+    if(on){
+      resizeLassoCanvas();
+      mapWrapEl.classList.add('lasso-active');
+      lassoBtn.classList.add('active');
+      lassoBtn.textContent = 'Drawing… (Esc to cancel)';
+      map.dragging.disable(); map.scrollWheelZoom.disable(); map.doubleClickZoom.disable(); map.touchZoom.disable();
+    } else {
+      mapWrapEl.classList.remove('lasso-active');
+      lassoBtn.classList.remove('active');
+      lassoBtn.textContent = 'Select area';
+      map.dragging.enable(); map.scrollWheelZoom.enable(); map.doubleClickZoom.enable(); map.touchZoom.enable();
+      lassoCtx.clearRect(0,0,lassoCanvas.width,lassoCanvas.height);
+      lassoDrawing = false; lassoPoints = [];
+    }
+  }
+  lassoBtn.addEventListener('click', function(){
+    if(mapWrapEl.classList.contains('lasso-active')){ setLassoMode(false); return; }
+    setLassoMode(true);
+  });
+  document.addEventListener('keydown', function(e){
+    if(e.key==='Escape' && mapWrapEl.classList.contains('lasso-active')) setLassoMode(false);
+  });
+  function drawLassoPath(){
+    lassoCtx.clearRect(0,0,lassoCanvas.width,lassoCanvas.height);
+    if(lassoPoints.length<2) return;
+    lassoCtx.beginPath();
+    lassoCtx.moveTo(lassoPoints[0].x, lassoPoints[0].y);
+    for(var i=1;i<lassoPoints.length;i++) lassoCtx.lineTo(lassoPoints[i].x, lassoPoints[i].y);
+    lassoCtx.closePath();
+    lassoCtx.fillStyle = 'rgba(168,114,15,0.15)';
+    lassoCtx.strokeStyle = tok('--accent');
+    lassoCtx.lineWidth = 2;
+    lassoCtx.fill();
+    lassoCtx.stroke();
+  }
+  function drawAreaOverlay(poly){
+    if(areaOverlayLayer) map.removeLayer(areaOverlayLayer);
+    areaOverlayLayer = L.polygon(poly, {color: tok('--accent'), weight:2, fillOpacity:0.08, dashArray:'5,4', interactive:false}).addTo(map);
+  }
+  function clearAreaOverlay(){
+    if(areaOverlayLayer){ map.removeLayer(areaOverlayLayer); areaOverlayLayer = null; }
+  }
+  lassoCanvas.addEventListener('pointerdown', function(e){
+    lassoDrawing = true;
+    lassoPoints = [];
+    var rect = lassoCanvas.getBoundingClientRect();
+    lassoPoints.push({x:e.clientX-rect.left, y:e.clientY-rect.top});
+    lassoCanvas.setPointerCapture(e.pointerId);
+  });
+  lassoCanvas.addEventListener('pointermove', function(e){
+    if(!lassoDrawing) return;
+    var rect = lassoCanvas.getBoundingClientRect();
+    lassoPoints.push({x:e.clientX-rect.left, y:e.clientY-rect.top});
+    drawLassoPath();
+  });
+  lassoCanvas.addEventListener('pointerup', function(e){
+    if(!lassoDrawing) return;
+    lassoDrawing = false;
+    if(lassoPoints.length >= 3){
+      var poly = lassoPoints.map(function(p){ var ll = map.containerPointToLatLng([p.x,p.y]); return [ll.lat, ll.lng]; });
+      state.areaPolygon = poly;
+      drawAreaOverlay(poly);
+      clearAreaBtn.classList.add('show');
+    }
+    setLassoMode(false);
+    refresh();
+  });
+  clearAreaBtn.addEventListener('click', function(){
+    state.areaPolygon = null;
+    clearAreaOverlay();
+    clearAreaBtn.classList.remove('show');
+    refresh();
+  });
+
+  // ---------- radius toggle (3km/1km) ----------
+  var radiusSeg = document.getElementById('radius-seg');
+  function updateRadiusLabels(){
+    var label = state.radius==='3km' ? '3 km' : '1 km';
+    document.querySelector('.brand .sub').textContent = 'price vs. ' + label + ' neighborhood';
+    document.getElementById('legend-dot-title').textContent = 'Dots: price vs. ' + label + ' neighborhood';
+    document.getElementById('legend-dot-note').innerHTML = 'Color = how a listing’s price/m&sup2; compares to every other listing within ' + label + '. Blue = below average (better deal), red = above.';
+  }
+  radiusSeg.querySelectorAll('button').forEach(function(btn){
+    btn.addEventListener('click', function(){
+      if(btn.classList.contains('active')) return;
+      radiusSeg.querySelectorAll('button').forEach(function(b){b.classList.remove('active');});
+      btn.classList.add('active');
+      state.radius = btn.dataset.radius;
+      updateRadiusLabels();
+      restyleMarkers();
+      if(state.selectedId!=null){
+        var selRow = markers.map(function(m){return m._row;}).find(function(r){return r[F.ID]===state.selectedId;});
+        if(selRow) selectRow(selRow);
+      }
+      refresh();
+    });
+  });
+
+  // ---------- sweet-spot highlight toggle ----------
+  var highlightTopEl = document.getElementById('highlight-top');
+  var highlightNEl = document.getElementById('highlight-n');
+  highlightNEl.disabled = true;
+  highlightTopEl.addEventListener('change', function(e){
+    state.highlightTop = e.target.checked;
+    highlightNEl.disabled = !e.target.checked;
+    refresh();
+  });
+  highlightNEl.addEventListener('change', function(e){
+    state.highlightN = Math.max(5, Math.min(300, +e.target.value || 30));
+    e.target.value = state.highlightN;
+    refresh();
+  });
+
+  // ---------- filter UI ----------
+  function chip(label, onToggle){
+    var el = document.createElement('span');
+    el.className = 'chip';
+    el.textContent = label;
+    el.tabIndex = 0;
+    el.addEventListener('click', function(){ el.classList.toggle('active'); onToggle(el.classList.contains('active')); refresh(); });
+    el.addEventListener('keydown', function(e){ if(e.key==='Enter'||e.key===' '){e.preventDefault(); el.click();} });
+    return el;
+  }
+  var districtChips = document.getElementById('district-chips');
+  DATA.districts.forEach(function(name, idx){
+    districtChips.appendChild(chip(name, function(active){
+      if(active) state.districts.add(idx); else state.districts.delete(idx);
+    }));
+  });
+  var roomsChips = document.getElementById('rooms-chips');
+  DATA.rooms_buckets.forEach(function(name, idx){
+    roomsChips.appendChild(chip(name, function(active){
+      if(active) state.rooms.add(idx); else state.rooms.delete(idx);
+    }));
+  });
+
+  function setupNumRange(minEl,maxEl,lo,hi,onChange){
+    minEl.min=lo; minEl.max=hi; minEl.value=lo; minEl.placeholder=lo;
+    maxEl.min=lo; maxEl.max=hi; maxEl.value=hi; maxEl.placeholder=hi;
+    function upd(){
+      var a = minEl.value===''? lo : Math.max(lo, Math.min(hi, +minEl.value));
+      var b = maxEl.value===''? hi : Math.max(lo, Math.min(hi, +maxEl.value));
+      if(a>b){ var t=a; a=b; b=t; }
+      minEl.value = a; maxEl.value = b;
+      onChange(a,b); refresh();
+    }
+    minEl.addEventListener('change', upd);
+    maxEl.addEventListener('change', upd);
+  }
+  setupNumRange(document.getElementById('price-min'), document.getElementById('price-max'), PRICE_MIN, PRICE_MAX,
+    function(a,b){state.priceMin=a; state.priceMax=b;});
+  setupNumRange(document.getElementById('area-min'), document.getElementById('area-max'), AREA_MIN, AREA_MAX,
+    function(a,b){state.areaMin=a; state.areaMax=b;});
+
+  document.getElementById('show-low-conf').addEventListener('change', function(e){
+    state.showLowConf = e.target.checked; refresh();
+  });
+  document.getElementById('reset-filters').addEventListener('click', function(){
+    state.districts.clear(); state.rooms.clear();
+    state.priceMin=PRICE_MIN; state.priceMax=PRICE_MAX; state.areaMin=AREA_MIN; state.areaMax=AREA_MAX;
+    state.showLowConf=false;
+    state.radius='3km'; state.highlightTop=false; state.highlightN=30; state.areaPolygon=null;
+    document.querySelectorAll('.chip.active').forEach(function(c){c.classList.remove('active');});
+    document.getElementById('price-min').value=PRICE_MIN; document.getElementById('price-max').value=PRICE_MAX;
+    document.getElementById('area-min').value=AREA_MIN; document.getElementById('area-max').value=AREA_MAX;
+    document.getElementById('show-low-conf').checked=false;
+    document.getElementById('highlight-top').checked=false;
+    document.getElementById('highlight-n').value=30;
+    document.getElementById('highlight-n').disabled=true;
+    radiusSeg.querySelectorAll('button').forEach(function(b){b.classList.toggle('active', b.dataset.radius==='3km');});
+    updateRadiusLabels();
+    restyleMarkers();
+    clearAreaOverlay();
+    clearAreaBtn.classList.remove('show');
+    clearSelection();
+    refresh();
+  });
+
+  var meta = DATA.meta;
+  document.getElementById('footer-meta').textContent =
+    'Snapshot ' + meta.generated_at.slice(0,10) + ' · ' + meta.rows_shown.toLocaleString('en-US') + ' of ' + meta.source_rows_total.toLocaleString('en-US') + ' listings mapped';
+
+  updateRadiusLabels();
+  refresh();
+
+  } catch(e) {
+    showDebugError('caught exception', e);
+  }
+})();
+</script>
