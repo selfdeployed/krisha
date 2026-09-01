@@ -1,0 +1,14 @@
+__pycache__/
+*.pyc
+.venv/
+*.tmp
+/tmp/ralph_*
+
+# Large raw/output files not generated or modified by this loop
+2025_data.csv
+AstanaLinksParserJune2026_parsed.csv
+01_near_stations_final.xlsx
+02_between_stations_final.xlsx
+02_between_stations_final_latest.xlsx
+Heatmap_price_m2_Astana_2025.png
+Heatmap_price_m2_Astana_2026.png

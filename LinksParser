@@ -1,0 +1,285 @@
+﻿#!/usr/bin/env python
+import argparse
+import csv
+import html
+import random
+import re
+import ssl
+import sys
+import time
+from datetime import datetime
+from html.parser import HTMLParser
+from pathlib import Path
+from urllib.error import HTTPError, URLError
+from urllib.request import Request, urlopen
+from xml.etree import ElementTree as ET
+from zipfile import ZipFile
+
+BASE_DIR = Path(__file__).resolve().parent
+DEFAULT_INPUT = BASE_DIR / "AstanaLinksParserJune2026.xlsx"
+DEFAULT_OUTPUT = BASE_DIR / "AstanaLinksParserJune2026_parsed.csv"
+SHEET_NS = {"a": "http://schemas.openxmlformats.org/spreadsheetml/2006/main"}
+RESULT_FIELDS = [
+    "source_row", "url", "status", "http_status", "advert_info", "parameters",
+    "lat", "lon", "fetched_at", "error",
+]
+
+
+class DivTextExtractor(HTMLParser):
+    def __init__(self, target_classes):
+        super().__init__(convert_charrefs=True)
+        self.target_classes = set(target_classes)
+        self.capture_depth = 0
+        self.current_parts = []
+        self.results = []
+
+    def handle_starttag(self, tag, attrs):
+        attrs = dict(attrs)
+        classes = set(attrs.get("class", "").split())
+        is_target = tag == "div" and bool(classes & self.target_classes)
+        if is_target:
+            if self.capture_depth == 0:
+                self.current_parts = []
+            self.capture_depth += 1
+            return
+        if self.capture_depth:
+            self.capture_depth += 1
+            if tag in {"br", "p", "li", "tr", "div"}:
+                self.current_parts.append(" ")
+
+    def handle_endtag(self, tag):
+        if self.capture_depth:
+            if tag in {"p", "li", "tr", "div"}:
+                self.current_parts.append(" ")
+            self.capture_depth -= 1
+            if self.capture_depth == 0:
+                text = clean_text(" ".join(self.current_parts))
+                if text:
+                    self.results.append(text)
+
+    def handle_data(self, data):
+        if self.capture_depth and data:
+            self.current_parts.append(data)
+
+
+def clean_text(value):
+    value = html.unescape(value or "").replace("\xa0", " ")
+    return re.sub(r"\s+", " ", value).strip()
+
+
+def read_xlsx_links(path):
+    links = []
+    with ZipFile(path) as archive:
+        shared_strings = read_shared_strings(archive)
+        root = ET.fromstring(archive.read("xl/worksheets/sheet1.xml"))
+        for row in root.findall("a:sheetData/a:row", SHEET_NS):
+            row_number = int(row.attrib["r"])
+            if row_number == 1:
+                continue
+            for cell in row.findall("a:c", SHEET_NS):
+                value = read_cell_value(cell, shared_strings)
+                if value.startswith(("http://", "https://")):
+                    links.append((row_number, value))
+                    break
+    return links
+
+
+def read_shared_strings(archive):
+    if "xl/sharedStrings.xml" not in archive.namelist():
+        return []
+    root = ET.fromstring(archive.read("xl/sharedStrings.xml"))
+    values = []
+    for item in root.findall("a:si", SHEET_NS):
+        parts = []
+        for node in item.iter("{http://schemas.openxmlformats.org/spreadsheetml/2006/main}t"):
+            parts.append(node.text or "")
+        values.append("".join(parts))
+    return values
+
+
+def read_cell_value(cell, shared_strings):
+    cell_type = cell.attrib.get("t")
+    if cell_type == "inlineStr":
+        inline = cell.find("a:is", SHEET_NS)
+        if inline is None:
+            return ""
+        return clean_text("".join(
+            node.text or ""
+            for node in inline.iter("{http://schemas.openxmlformats.org/spreadsheetml/2006/main}t")
+        ))
+    value = cell.find("a:v", SHEET_NS)
+    if value is None or value.text is None:
+        return ""
+    if cell_type == "s":
+        return shared_strings[int(value.text)]
+    return clean_text(value.text)
+
+
+def load_done_urls(output_path):
+    if not output_path.exists():
+        return set()
+    done = set()
+    with output_path.open("r", newline="", encoding="utf-8-sig") as handle:
+        for row in csv.DictReader(handle):
+            if row.get("status") == "ok" and row.get("url"):
+                done.add(row["url"])
+    return done
+
+
+def open_results(output_path):
+    exists = output_path.exists() and output_path.stat().st_size > 0
+    handle = output_path.open("a", newline="", encoding="utf-8-sig")
+    writer = csv.DictWriter(handle, fieldnames=RESULT_FIELDS)
+    if not exists:
+        writer.writeheader()
+        handle.flush()
+    return handle, writer
+
+
+def fetch_html(url, timeout, insecure):
+    headers = {
+        "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 "
+                      "(KHTML, like Gecko) Chrome/125.0 Safari/537.36",
+        "Accept": "text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8",
+        "Accept-Language": "ru-RU,ru;q=0.9,en;q=0.8",
+        "Connection": "close",
+    }
+    request = Request(url, headers=headers)
+    context = ssl._create_unverified_context() if insecure else None
+    with urlopen(request, timeout=timeout, context=context) as response:
+        charset = response.headers.get_content_charset() or "utf-8"
+        return response.status, response.read().decode(charset, "replace")
+
+
+def extract_div_text(page_html, target_classes):
+    parser = DivTextExtractor(target_classes)
+    parser.feed(page_html)
+    return " | ".join(parser.results)
+
+
+def extract_coordinates(page_html):
+    lat = first_match(page_html, [
+        r'(?i)"lat"\s*:\s*"?([45]\d\.\d+)"?',
+        r"(?i)'lat'\s*:\s*'?([45]\d\.\d+)'?",
+        r"(?i)(?:lat|latitude)[^0-9-]{0,80}([45]\d\.\d+)",
+    ])
+    lon = first_match(page_html, [
+        r'(?i)"lon(?:gitude)?"\s*:\s*"?([67]\d\.\d+)"?',
+        r'(?i)"lng"\s*:\s*"?([67]\d\.\d+)"?',
+        r"(?i)'lon(?:gitude)?'\s*:\s*'?([67]\d\.\d+)'?",
+        r"(?i)'lng'\s*:\s*'?([67]\d\.\d+)'?",
+        r"(?i)(?:lon|lng|longitude)[^0-9-]{0,80}([67]\d\.\d+)",
+    ])
+    return lat, lon
+
+
+def first_match(text, patterns):
+    for pattern in patterns:
+        match = re.search(pattern, text)
+        if match:
+            return match.group(1)
+    return ""
+
+
+def parse_page(row_number, url, args):
+    try:
+        status_code, page_html = fetch_html(url, args.timeout, args.insecure)
+        advert_info = extract_div_text(page_html, {
+            "offer_advert__advert-info", "offer__advert-info", "offer__advert-short-info",
+        })
+        parameters = extract_div_text(page_html, {"offer__parameters"})
+        if not parameters:
+            parameters = extract_div_text(page_html, {"offer__info-item"})
+        lat, lon = extract_coordinates(page_html)
+        return {
+            "source_row": row_number,
+            "url": url,
+            "status": "ok",
+            "http_status": status_code,
+            "advert_info": advert_info,
+            "parameters": parameters,
+            "lat": lat,
+            "lon": lon,
+            "fetched_at": datetime.now().isoformat(timespec="seconds"),
+            "error": "",
+        }
+    except HTTPError as exc:
+        return error_row(row_number, url, getattr(exc, "code", ""), f"HTTPError: {exc}")
+    except (URLError, TimeoutError, OSError) as exc:
+        return error_row(row_number, url, "", f"{type(exc).__name__}: {exc}")
+
+
+def error_row(row_number, url, http_status, error):
+    return {
+        "source_row": row_number,
+        "url": url,
+        "status": "error",
+        "http_status": http_status,
+        "advert_info": "",
+        "parameters": "",
+        "lat": "",
+        "lon": "",
+        "fetched_at": datetime.now().isoformat(timespec="seconds"),
+        "error": str(error),
+    }
+
+
+def wait_between_requests(args, request_index):
+    if args.no_delay:
+        return
+    delay = random.uniform(args.min_delay, args.max_delay)
+    print(f"Waiting {delay:.1f}s before request {request_index}...")
+    time.sleep(delay)
+
+
+def build_arg_parser():
+    parser = argparse.ArgumentParser(description="Parse Krisha links from AstanaLinksParserJune2026.xlsx.")
+    parser.add_argument("--input", default=str(DEFAULT_INPUT), help="Input .xlsx path.")
+    parser.add_argument("--output", default=str(DEFAULT_OUTPUT), help="Output .csv path.")
+    parser.add_argument("--limit", type=int, default=0, help="Only process this many pending links. 0 means all.")
+    parser.add_argument("--start-row", type=int, default=2, help="First Excel source row to process.")
+    parser.add_argument("--timeout", type=int, default=30, help="HTTP timeout in seconds.")
+    parser.add_argument("--min-delay", type=float, default=4.0, help="Minimum delay before each request.")
+    parser.add_argument("--max-delay", type=float, default=6.0, help="Maximum delay before each request.")
+    parser.add_argument("--no-delay", action="store_true", help="Disable request delay; use only for testing.")
+    parser.add_argument("--insecure", action="store_true", help="Disable SSL verification if local Python rejects the site certificate.")
+    return parser
+
+
+def main():
+    args = build_arg_parser().parse_args()
+    input_path = Path(args.input)
+    output_path = Path(args.output)
+    if args.min_delay > args.max_delay:
+        raise SystemExit("--min-delay cannot be greater than --max-delay")
+    links = [(row, url) for row, url in read_xlsx_links(input_path) if row >= args.start_row]
+    done_urls = load_done_urls(output_path)
+    pending = [(row, url) for row, url in links if url not in done_urls]
+    if args.limit:
+        pending = pending[:args.limit]
+    print(f"Input links: {len(links)}")
+    print(f"Already completed: {len(done_urls)}")
+    print(f"Pending this run: {len(pending)}")
+    print(f"Output: {output_path}")
+    if not pending:
+        return
+    handle, writer = open_results(output_path)
+    try:
+        for index, (row_number, url) in enumerate(pending, start=1):
+            wait_between_requests(args, index)
+            print(f"[{index}/{len(pending)}] row {row_number}: {url}")
+            result = parse_page(row_number, url, args)
+            writer.writerow(result)
+            handle.flush()
+            print(f"  -> {result['status']} lat={result['lat']} lon={result['lon']}")
+    finally:
+        handle.close()
+
+
+if __name__ == "__main__":
+    try:
+        main()
+    except KeyboardInterrupt:
+        print("\nStopped by user. Progress already written to the CSV.", file=sys.stderr)
+        raise SystemExit(130)
+
