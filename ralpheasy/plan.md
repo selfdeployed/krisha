@@ -70,7 +70,7 @@ All tasks below have their `passes` field set to true.
       "Verify with 'git log --oneline' (at least 1 commit) and 'git status' (clean working tree), and confirm the large files above do NOT show up as tracked ('git ls-files' should not list them).",
       "Do not run 'git init' again in any later task."
     ],
-    "passes": "in_progress",
+    "passes": true,
     "depends_on": []
   },
   {
