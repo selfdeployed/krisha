@@ -101,7 +101,7 @@ All tasks below have their `passes` field set to true.
       "Document the confirmed data gap (verified: zero 'комнат' matches across 5,000 scanned rows in this dataset version): room count does not appear anywhere in advert_info or parameters. Specify handling: rooms field stays None; optionally derive rooms_bucket_estimated from area_total_m2 via a documented heuristic (e.g. <=30 studio, 30-45 1-room, 45-65 2-room, 65-90 3-room, >90 4+ room) with rooms_estimate_is_heuristic=True, with an explicit warning this heuristic must never be used as a hard OLS control without that caveat. Note as a FUTURE (out-of-scope) scraper enhancement: capturing the page <h1>/title text in LinksParser (which typically encodes 'N-комнатная квартира') as a new output column.",
       "For every regex/rule above, include the literal real sample string it was derived from (pulled directly from methodology/samples/sample_rows.csv) as a documented test case."
     ],
-    "passes": false,
+    "passes": true,
     "depends_on": ["sample_fixture"]
   },
   {

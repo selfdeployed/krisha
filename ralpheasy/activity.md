@@ -3,10 +3,63 @@
 ## Current Status
 
 **Last Updated:** 2026-09-01
-**Tasks Completed:** 2 / 11
-**Current Task:** field_extraction_spec (next, not started)
+**Tasks Completed:** 3 / 11
+**Current Task:** build_parser_script (next, not started)
 
 ## Session Log
+
+### 2026-09-01 — field_extraction_spec completed
+
+Wrote `methodology/PARSING_SPEC.md`: the label-segmentation parsing
+strategy (ordered label list + `re.finditer` position-sort + slice-between-
+labels, with the critical ordering rule that `Площадь кухни` must precede
+`Площадь` and `Балкон остеклён` must precede `Балкон`), price/district
+prefix extraction, field-specific post-processing rules, the confirmed
+pipe-delimited `parameters` fallback, and the confirmed room-count data
+gap — per the task's required sections.
+
+Every regex/rule is backed by a literal test-case string pulled directly
+from `methodology/samples/sample_rows.csv` (read via
+`pandas.read_csv(encoding='utf-8')`, dumped to a scratch UTF-8 file, read
+back with the Read tool, then deleted — never printed raw to the Windows
+console).
+
+**Real edge cases the sample fixture surfaced that sharpened the spec
+beyond the plan's original sketch (documented verification, not assumed):**
+- Price regex must not anchor to `^`: row `source_row=12` has
+  `"от 78 950 600 ₸ Рассрочка Город Астана, ..."` — an installment-plan
+  listing with `"от "` before the digits and `"Рассрочка"` after `₸`,
+  before the district segment. Spec now uses `re.search` for
+  `(\d[\d\s]*)\s*₸` (first match) instead of a `^`-anchored regex, and
+  documents that district-prefix extraction must not assume it
+  immediately follows the price match.
+- `Этаж` (floor) is not always present: row `source_row=12` (the `Sanara`
+  pre-construction listing, build year 2027) has no `Этаж` label anywhere
+  in `advert_info` — floor/floor_total/floor_is_first/floor_is_last must
+  all be `None` (unknown), not `False`.
+- `Состояние квартиры` free-text values go beyond the two obvious buckets:
+  row `source_row=58` has `"не новый, но аккуратный ремонт"` (comma
+  inside the value itself, correctly preserved since only `Безопасность`
+  is comma-split) — added a third `needs_renovation` enum bucket.
+- Real label-ordering bug confirmed via row `source_row=21`:
+  `"Балкон балкон Балкон остеклён да ..."` — if `Балкон` were ordered
+  before `Балкон остеклён` in the alternation regex, segmentation would
+  mis-split and lose the `Балкон остеклён` field. Spec documents this as a
+  concrete (not hypothetical) real-data test case.
+- Pipe-delimited fallback (row `source_row=97`) has a single `" | "`
+  segment containing two labels together
+  (`"Площадь 39 м², Площадь кухни — 10 м²"`), confirming label-
+  segmentation must still run within/across pipe segments, not assume
+  one label per segment.
+
+**Verification:** re-read every literal string quoted in
+`PARSING_SPEC.md` against the actual `sample_rows.csv` contents (dumped
+via pandas, read back with the Read tool) row by row to confirm no
+transcription errors; all matched exactly. This was a documentation-only
+task — no code was written or run (that is `build_parser_script`, next).
+
+Next: build_parser_script (depends_on field_extraction_spec, now
+satisfied).
 
 ### 2026-09-01 — sample_fixture completed
 
