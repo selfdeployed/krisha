@@ -3,10 +3,150 @@
 ## Current Status
 
 **Last Updated:** 2026-09-01
-**Tasks Completed:** 10 / 11
-**Current Task:** final_review (next; depends_on methodology_consolidation, now true — the only remaining task).
+**Tasks Completed:** 11 / 11 — ALL TASKS COMPLETE
+**Current Task:** none — final_review was the last task in the plan.
 
 ## Session Log
+
+### 2026-09-01 — final_review completed (LAST TASK — plan complete)
+
+Final consistency pass across all five methodology documents and a full
+re-run of every `--selftest`/`--sample` verification command, per this
+task's steps.
+
+**Cross-document consistency check:** re-read `PARSING_SPEC.md`,
+`FEATURE_SPEC.md`, `RANKING_METHODOLOGY.md`, `EDA_PLAN.md`, and
+`METHODOLOGY.md` together in full. Confirmed terminology and field names
+are used consistently across all five: parser output field names
+(`price_tenge`, `district`, `building_type`, `complex_name`, `build_year`,
+`is_under_construction` with the `>=` fix already applied in both
+`PARSING_SPEC.md` and `FEATURE_SPEC.md`, `floor_is_first`/`floor_is_last`,
+`ceiling_height_m`, `former_dormitory`, `exchange_possible`,
+`kitchen_area_m2`) match exactly between `PARSING_SPEC.md`'s output
+summary (§7) and `FEATURE_SPEC.md`'s field-dependency table (§4). Feature
+names (`avg_price_m2_within_3km_mean`/`_median`, `n_neighbors_3km`,
+`complex_median_price_m2`/`complex_listing_count`,
+`district_median_price_m2`/`district_listing_count`, `grid_cell_id`,
+`kitchen_area_ratio`, `distance_to_center_km`) match exactly between
+`FEATURE_SPEC.md` and every place `RANKING_METHODOLOGY.md`,
+`EDA_PLAN.md`, and `METHODOLOGY.md` reference them. The trimmed
+sample-scale formula (`ln_price_m2 ~ ln_area +
+avg_price_m2_within_3km_median`) and its "pipeline-correctness check
+only, not a trustworthy price model" caveat is stated identically (not
+contradicted) in `RANKING_METHODOLOGY.md` §3, `METHODOLOGY.md`'s "what
+was actually run" section, and the `ranking_scaffold_code` activity-log
+entry below. The `min_n=5` group-aggregate threshold and the separate
+`n>=8-10` OLS fixed-effect threshold are consistent between
+`FEATURE_SPEC.md` and `RANKING_METHODOLOGY.md` §4. The VIF>10 decision
+rule is stated identically in `RANKING_METHODOLOGY.md` §5 and
+`EDA_PLAN.md` §6. No terminology or field-name drift found — the
+`methodology_consolidation` task's own reconciliation pass (previous
+entry below) had already caught and fixed the one real drift
+(`is_under_construction`'s `>`/`>=` prose mismatch in `PARSING_SPEC.md`),
+and re-reading confirms it stuck and nothing new regressed.
+
+**Full re-run of all four verification commands** (real runs against the
+real 16-row sample fixture, repo root):
+
+```
+python methodology/scripts/parse_listings.py --selftest
+```
+```
+selftest: 35 checks passed
+```
+
+```
+python methodology/scripts/parse_listings.py --sample
+```
+```
+wrote 16 parsed rows to .../methodology/samples/sample_parsed_preview.csv
+error rows (status=error): 1
+pipe-delimited fallback detected: 5
+price parsed: 15/16
+district parsed: 15/16
+area_total_m2 parsed: 15/16
+complex_name present: 8/16
+```
+
+```
+python methodology/scripts/feature_engineering.py --sample
+```
+```
+ok   haversine_km self-check: Baiterek Tower -> Khan Shatyr = 1.619 km
+wrote 16 feature rows to .../methodology/samples/sample_features.csv
+price_m2 computed: 15/16
+n_neighbors_3km stats: count 16, mean 4.875, min 0, 25% 1.0, 50% 6.5, 75% 8.0, max 9
+low_confidence_spatial (n_neighbors_3km < 3): 5/16
+complex_median_price_m2 present: 8/16
+district_median_price_m2 present: 15/16
+```
+
+```
+python methodology/scripts/ranking.py --sample
+```
+```
+=== SAMPLE-SCALE OLS FIT: PIPELINE-CORRECTNESS CHECK ONLY ===
+formula: ln_price_m2 ~ ln_area + avg_price_m2_within_3km_median
+n used in fit: 13/16
+R-squared: 0.4503  Adj R-squared: 0.3403
+coefficients: Intercept=12.178371, ln_area=0.115038,
+avg_price_m2_within_3km_median=0.000001
+in-complex percentile used for composite (complex_listing_count >= 5): 0/16 rows
+wrote 16 ranked rows to .../methodology/samples/sample_ranked_preview.csv
+```
+
+All four commands reproduce **exactly** the same real numbers already
+recorded in this log's `build_parser_script`, `feature_scaffold_code`, and
+`ranking_scaffold_code` entries (35/35 selftest checks, 15/16 parsed,
+16/16 feature rows with identical `n_neighbors_3km` distribution, 13/16
+OLS fit with identical R²=0.4503 and identical coefficients to 6 decimal
+places) — confirming the `methodology_consolidation` task's doc-only edit
+(the `PARSING_SPEC.md` `>=` fix) did not touch any `.py` file and nothing
+regressed since. **Nothing was broken; no fixes were needed in this
+task.** `git status --short` before this task's commit showed only
+`ralpheasy/plan.md` as modified (the `in_progress` flag) — all four output
+CSVs (`sample_parsed_preview.csv`, `sample_features.csv`,
+`sample_ranked_preview.csv`) are byte-for-byte unchanged from the prior
+run, confirmed by git seeing no diff against them.
+
+**Closing summary — full deliverable set:**
+
+Documentation (`methodology/`): `PARSING_SPEC.md` (label-segmentation
+parsing design + regexes + real test cases), `FEATURE_SPEC.md` (hedonic +
+spatial + comparative feature list with field-dependency table),
+`RANKING_METHODOLOGY.md` (percentile-rank + OLS-residual approaches, how
+they combine, diagnostics/SE-clustering plan for the real model),
+`EDA_PLAN.md` (full-scale exploratory-analysis checklist, not executed),
+`methodology/samples/README.md` (per-row edge-case documentation for the
+16-row fixture). Top-level `METHODOLOGY.md` consolidates all of the above
+with a reading order, known data-quality gaps, and next-steps-at-scale
+section.
+
+Code (`methodology/scripts/`): `parse_listings.py` (label-segmentation
+parser, `--selftest`/`--sample` modes), `feature_engineering.py`
+(haversine spatial features, group aggregates, landmark dummies,
+`--sample` mode), `ranking.py` (percentile ranks, trimmed-formula OLS fit,
+composite `good_deal_score`, `--sample` mode).
+
+Real sample data (`methodology/samples/`): `sample_rows.csv` (16
+hand-picked rows from the full file), `sample_parsed_preview.csv`,
+`sample_features.csv`, `sample_ranked_preview.csv` — every one of these
+three output files is real code output from a real run against the real
+16-row fixture, not fabricated or hand-written.
+
+**Confirmed: no task in this entire loop ever ran a parser, feature-engineering,
+or ranking/modeling script against the full `AstanaLinksParserJune2026_parsed.csv`
+(~34,766 rows) or `2025_data.csv` (~38k rows).** The only contact with the
+full CSV across all 11 tasks was a single read-through in `sample_fixture`
+(2026-09-01 entry below) to hand-pick the 16-row fixture and compute
+descriptive coverage counts (`.str.contains()` stats) — never a
+parse/feature/model pipeline run. `2025_data.csv` was never opened at all
+in this loop. Both files remain git-ignored (confirmed in the
+`bootstrap_git` entry's `git ls-files` check, still true — no task added
+them to tracking).
+
+All 11 tasks in `ralpheasy/plan.md` now have `"passes": true`. This is the
+last entry in this log for this loop.
 
 ### 2026-09-01 — methodology_consolidation completed
 

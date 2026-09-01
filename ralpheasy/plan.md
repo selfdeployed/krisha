@@ -226,7 +226,7 @@ All tasks below have their `passes` field set to true.
       "Write a closing summary entry in activity.md describing the full deliverable set (docs + scripts + real sample outputs) and confirming no task step ever executed a script against the full AstanaLinksParserJune2026_parsed.csv or 2025_data.csv.",
       "This is the last task -- after it is marked true, zero tasks should remain false or in_progress."
     ],
-    "passes": false,
+    "passes": true,
     "depends_on": ["methodology_consolidation"]
   }
 ]
