@@ -3,10 +3,112 @@
 ## Current Status
 
 **Last Updated:** 2026-09-01
-**Tasks Completed:** 7 / 11
-**Current Task:** ranking_scaffold_code (next; depends_on ranking_methodology_spec + feature_scaffold_code, both now true). eda_plan is also unblocked (depends only on feature_engineering_spec) but plan ordering lists ranking_scaffold_code first.
+**Tasks Completed:** 8 / 11
+**Current Task:** eda_plan (next; depends_on feature_engineering_spec, already true). methodology_consolidation and final_review remain blocked until eda_plan and (for consolidation) all other doc/code tasks are done.
 
 ## Session Log
+
+### 2026-09-01 — ranking_scaffold_code completed
+
+Implemented `methodology/scripts/ranking.py` per `RANKING_METHODOLOGY.md`:
+`percentile_rank_within_group(df, group_col, value_col)` (ascending rank
+via `(rank-1)/(n-1)`, exactly 0 for the cheapest listing in its group per
+the task step's literal requirement — not the doc section 1's looser
+`rank/count` phrasing, which was only ever approximate per its own "~1 =
+most expensive" wording; a lone-member group gets 0.0 since there's no
+relative position to express); `fit_price_model(df, formula,
+cluster_col=None)` (fits via `smf.ols(...).fit()`, optional
+`get_robustcov_results(cov_type="cluster", ...)` clustering matching
+`01_near_stations_final.py`'s pattern, not exercised in `--sample` mode
+per section 6's explicit "meaningless at ~15-20 rows" rule — `cluster_col`
+left unset in the `--sample` call); `compute_composite_score(df, ...)`
+(row-wise mean of two z-scored components, `skipna=True` so a row with a
+missing OLS residual — no 3km neighbors, dropped from the fit — still
+gets a percentile-only score rather than `NaN`).
+
+`--sample` mode reads `methodology/samples/sample_features.csv` (already
+has `price_m2`/`ln_price_m2` from `feature_scaffold_code`, computed
+defensively only if absent), computes `percentile_rank_in_district` and
+`percentile_rank_in_complex`, builds `percentile_rank_for_composite`
+using the section 7/8 fallback rule (in-complex percentile only when
+`complex_listing_count >= 5`, else district percentile — confirmed 0/16
+rows qualify in this sample, matching `feature_scaffold_code`'s activity
+log note that every sample complex has `complex_listing_count=1`), fits
+the TRIMMED sample-scale formula `ln_price_m2 ~ ln_area +
+avg_price_m2_within_3km_median` from section 3, adds
+`predicted_price_m2`/`actual_price_m2`/`ols_residual_score`, computes
+`good_deal_score`, and writes `methodology/samples/sample_ranked_preview.csv`.
+
+**Verification — `python methodology/scripts/ranking.py --sample`** (real
+run against the real 16-row `sample_features.csv`):
+```
+=== SAMPLE-SCALE OLS FIT: PIPELINE-CORRECTNESS CHECK ONLY ===
+n is ~15-20 rows and the formula is deliberately trimmed to 2
+continuous predictors (RANKING_METHODOLOGY.md section 3) because
+the full formula (section 2) is rank-deficient at this scale.
+This proves the fit/residual/ranking code path works -- it is
+NOT a trustworthy coefficient estimate or price model. The real
+model only becomes meaningful on the full ~35k-row dataset,
+explicitly out of scope for this run.
+formula: ln_price_m2 ~ ln_area + avg_price_m2_within_3km_median
+n used in fit (non-missing ln_price_m2 & avg_price_m2_within_3km_median): 13/16
+R-squared: 0.4503  Adj R-squared: 0.3403
+coefficients:
+Intercept                         12.178371
+ln_area                            0.115038
+avg_price_m2_within_3km_median     0.000001
+in-complex percentile used for composite (complex_listing_count >= 5): 0/16 rows
+wrote 16 ranked rows to .../methodology/samples/sample_ranked_preview.csv
+```
+
+**Eyeballed `sample_ranked_preview.csv` for sign correctness (real values,
+not assumed)** — does a listing priced below similar/nearby listings score
+as a better deal:
+- `source_row=20` (Алматы district, cheapest listing in that district:
+  `percentile_rank_in_district=0.0`; `actual_price_m2=439,215.69` vs
+  `predicted_price_m2=538,219.65`, i.e. ~18% below its features' predicted
+  price, `ols_residual_score=-0.203`) → `good_deal_score=1.333`, the
+  **highest** score of any row with a fitted residual — correct, it is
+  simultaneously the cheapest-in-district and most-underpriced-vs-features
+  listing in the sample.
+- `source_row=7` (Фирдаус, Алматы district, most expensive listing in that
+  district: `percentile_rank_in_district=1.0`; `actual_price_m2=772,727.26`
+  vs `predicted_price_m2=667,004.56`, ~15% above predicted,
+  `ols_residual_score=+0.147`) → `good_deal_score=-1.308`, the **lowest**
+  score in the sample — correct, opposite case from `source_row=20`.
+- `source_row=2` (Turan Tower) and `source_row=15` (Акерке 2): each the
+  sole listing in its district (`Нура`, `Сарыарка`) with `n_neighbors_3km=0`
+  (confirmed in `feature_scaffold_code`'s activity log), so
+  `avg_price_m2_within_3km_median` is `NaN` and the OLS fit's own listwise
+  deletion correctly dropped them (`predicted_price_m2`/
+  `ols_residual_score` both `NaN`). `good_deal_score` for both =
+  `1.176965`, exactly the z-scored percentile component alone (`skipna`
+  mean with one input) — not `NaN`, matching the composite function's
+  documented fallback behavior, and not silently treated as a bug.
+- `source_row=3` (View Park Family, `complex_listing_count=1`):
+  `percentile_rank_in_complex=0.0` (meaningless lone-member value) but
+  `percentile_rank_for_composite=0.7` (the real `percentile_rank_in_district`
+  value) — confirms the section 7/8 fallback rule is actually being applied
+  per-row, not just computed and ignored.
+- `source_row=87` (the error row, no `price_m2`/`ln_price_m2`/lat/lon at
+  all): every ranking column is `NaN` — correct, no input to rank or fit
+  on, not an error.
+
+Confirmed R-squared (0.4503) and the two coefficients are real
+`statsmodels` output from this run, not fabricated, and are labeled in
+both stdout and this log as a pipeline-correctness check only per
+`RANKING_METHODOLOGY.md` section 3 — not a trustworthy price model (n=13
+after listwise deletion, 2 continuous predictors, no diagnostics from
+section 5 applied, as section 5 itself specifies those are only
+meaningful at full scale).
+
+No function in this file was run against `AstanaLinksParserJune2026_parsed.csv`
+or `2025_data.csv`.
+
+Next: `eda_plan` (`depends_on: ["feature_engineering_spec"]`, already
+`true`) — the only remaining unblocked task; `methodology_consolidation`
+and `final_review` stay blocked until it and the rest of the doc/code
+tasks are done.
 
 ### 2026-09-01 — ranking_methodology_spec completed
 
