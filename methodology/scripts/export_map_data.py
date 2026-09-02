@@ -50,6 +50,23 @@ SPATIAL_PCT_CLAMP = 0.35
 # p99=+118%). ±50% keeps most of the real spread legible.
 HEAT_PCT_CLAMP = 0.5
 
+# residual_pct = exp(hier residual)-1 (% vs. what comparable flats at the
+# same address predict) has a similar spread to spatial_price_pct_vs_avg
+# (p1=-30%, p5=-20%, p50=0%, p95=+26%, p99=+46%) -- reuse the same clamp
+# so both render on one consistent, comparable color scale.
+RESIDUAL_PCT_CLAMP = SPATIAL_PCT_CLAMP
+
+# good_deal_score is a composite robust z-score (mean of MAD-scaled
+# z(-spatial_pct), z(-residual_pct)), a different unit from the two
+# percent signals above; +-2.5 covers the meaningful range (measured
+# distribution is printed in the report on every run).
+COMPOSITE_CLAMP = 2.5
+
+# residual_z is exported x100 as an int; the map badges "strong deal" at
+# z <= -1.5 (relative discrepancy AND significance, given the number of
+# comparables behind the estimate).
+STRONG_DEAL_Z = -1.5
+
 # Expected category sets -- asserted on every run so a refresh with an
 # unexpected new category (e.g. krisha.kz adding a 7th district) fails
 # loudly instead of silently mis-indexing.
@@ -141,6 +158,10 @@ def main():
     n_reliable_false = 0
     n_pct_null_1km = 0
     n_reliable_false_1km = 0
+    n_residual_null = 0
+    n_residual_unreliable = 0
+    n_strong_deal = 0
+    n_composite_null = 0
     for _, r in shown.iterrows():
         spatial_pct = r["spatial_price_pct_vs_avg"]
         spatial_pm = None if pd.isna(spatial_pct) else int(round(spatial_pct * 1000))
@@ -157,6 +178,23 @@ def main():
         reliable_1km = 1 if bool(r["spatial_rank_reliable_1km"]) else 0
         if not reliable_1km:
             n_reliable_false_1km += 1
+
+        residual_pct = r["residual_pct"]
+        residual_pm = None if pd.isna(residual_pct) else int(round(residual_pct * 1000))
+        if residual_pm is None:
+            n_residual_null += 1
+        residual_reliable = 1 if bool(r["residual_reliable"]) else 0
+        if residual_pm is not None and not residual_reliable:
+            n_residual_unreliable += 1
+        residual_z = r["residual_z"]
+        residual_z100 = None if pd.isna(residual_z) else int(round(residual_z * 100))
+        if residual_reliable and residual_z100 is not None and residual_z <= STRONG_DEAL_Z:
+            n_strong_deal += 1
+
+        composite = r["good_deal_score"]
+        composite_pm = None if pd.isna(composite) else int(round(composite * 1000))
+        if composite_pm is None:
+            n_composite_null += 1
 
         rows_out.append([
             int(r["_id"]),
@@ -178,6 +216,11 @@ def main():
             spatial_pm_1km,
             reliable_1km,
             _clean_int(r["n_neighbors_1km"]),
+            residual_pm,
+            residual_reliable,
+            residual_z100,
+            _clean_int(round(r["predicted_price_m2"])) if pd.notna(r["predicted_price_m2"]) else None,
+            composite_pm,
         ])
 
     payload = {
@@ -188,6 +231,9 @@ def main():
             "rows_excluded_bbox": n_out_of_bbox,
             "rows_shown": n_shown,
             "spatial_pct_clamp": SPATIAL_PCT_CLAMP,
+            "residual_pct_clamp": RESIDUAL_PCT_CLAMP,
+            "composite_clamp": COMPOSITE_CLAMP,
+            "strong_deal_z": STRONG_DEAL_Z,
             "heat_pct_clamp": HEAT_PCT_CLAMP,
             "city_median_price_m2": city_median_price_m2,
             "bbox_lat": list(BBOX_LAT),
@@ -222,6 +268,12 @@ def main():
         f"spatial_rank_reliable=False (shown de-emphasized): {n_reliable_false}",
         f"spatial_price_pct_vs_avg_1km null: {n_pct_null_1km}",
         f"spatial_rank_reliable_1km=False: {n_reliable_false_1km}",
+        f"residual_pct null (outside fit sample): {n_residual_null}",
+        f"residual_reliable=False (thin comparables, shown de-emphasized): {n_residual_unreliable}",
+        f"strong deals (reliable & residual_z <= {STRONG_DEAL_Z}): {n_strong_deal}",
+        f"good_deal_score null: {n_composite_null}",
+        "good_deal_score quantiles (shown rows): " + ", ".join(
+            f"p{int(p*100)}={v:+.2f}" for p, v in shown["good_deal_score"].quantile([0.01, 0.05, 0.5, 0.95, 0.99]).items()),
         f"city median price_m2 (shown rows): {city_median_price_m2}",
         f"distinct complexes: {len(complex_names)}",
         f"output file size: {size_mb:.2f} MB",

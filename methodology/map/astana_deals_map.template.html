@@ -1,3 +1,4 @@
+<meta charset="utf-8">
 <title>Astana Sweet Spots</title>
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Golos+Text:wght@500;600;700&family=Manrope:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600&display=swap">
 <style>
@@ -196,12 +197,6 @@ body{
 .map-wrap.lasso-active #lasso-canvas{display:block}
 .map-wrap.lasso-active #map{cursor:crosshair}
 
-/* ---------- sweet-spot highlight halo (SVG-rendered so CSS animation applies) ---------- */
-.sweet-spot-halo{animation:pulseHalo 1.7s ease-in-out infinite}
-@keyframes pulseHalo{0%,100%{opacity:1}50%{opacity:.55}}
-@media (prefers-reduced-motion:reduce){.sweet-spot-halo{animation:none;opacity:.55}}
-.selection-ring{opacity:.95}
-
 /* ---------- side panel: selection + top sweet spots ---------- */
 .side-panel{
   width:300px;flex:none;background:var(--surface-1);border-left:1px solid var(--border);
@@ -242,6 +237,10 @@ body{
 .leaflet-popup-tip{background:var(--surface-2)}
 .leaflet-popup-content{margin:12px 16px;font-family:var(--font-body)}
 .popup-title{font-family:var(--font-display);font-weight:700;font-size:14px;margin-bottom:6px;color:var(--text-primary)}
+.popup-stack{display:flex;align-items:center;justify-content:space-between;gap:8px;margin:0 0 8px;padding:4px 6px;border-radius:6px;background:var(--accent-wash);font-family:var(--font-mono);font-size:11px;color:var(--text-secondary)}
+.popup-stack button{border:1px solid var(--border-strong);background:var(--surface-2);color:var(--text-primary);border-radius:4px;width:24px;height:22px;cursor:pointer;font-size:14px;line-height:1;padding:0}
+.popup-stack button:hover{border-color:var(--accent);color:var(--accent)}
+.popup-stack button:disabled{opacity:.35;cursor:default}
 .popup-price{font-family:var(--font-mono);font-size:16px;font-weight:600;margin-bottom:2px}
 .popup-pm2{font-family:var(--font-mono);font-size:11.5px;color:var(--text-muted);margin-bottom:8px}
 .popup-grid{display:grid;grid-template-columns:auto auto;gap:2px 12px;font-size:12px;color:var(--text-secondary);margin-bottom:8px}
@@ -250,6 +249,14 @@ body{
   border-radius:8px;padding:7px 9px;font-size:12px;font-weight:600;margin-bottom:9px;
 }
 .popup-signal.low-conf{background:var(--surface-3);color:var(--text-muted);font-weight:500}
+.popup-signal .sub{display:block;font-weight:400;opacity:.8;font-size:11px;margin-top:1px}
+.popup-secondary{font-size:11px;color:var(--text-muted);line-height:1.5;margin:-4px 0 9px 2px}
+.popup-secondary b{font-family:var(--font-mono);font-weight:600}
+.strong-badge{
+  display:inline-block;font-size:10px;font-weight:700;letter-spacing:.04em;text-transform:uppercase;
+  padding:1px 6px;border-radius:99px;background:var(--accent);color:var(--accent-ink);margin-left:6px;vertical-align:1px;
+}
+.seg.disabled{opacity:.45;pointer-events:none}
 .popup-link{
   display:inline-block;font-size:12.5px;font-weight:700;color:var(--accent-ink);
   background:var(--accent);padding:6px 12px;border-radius:7px;text-decoration:none;
@@ -302,6 +309,15 @@ body{
       </div>
 
       <div class="filter-group">
+        <span class="filter-label">Ranking signal</span>
+        <div class="seg" id="mode-seg">
+          <button data-mode="spatial" class="active" title="Price/m² vs. the median of every other listing within the chosen radius. Simple, local, no model.">Neighborhood</button>
+          <button data-mode="residual" title="Price/m² vs. what a hedonic model expects from the flat's own features (area, floor, condition, age…) plus the price level of comparable flats in the same building / complex / block. Independent of the neighborhood signal.">Model</button>
+          <button data-mode="both" title="Average of the two signals as robust z-scores (neighborhood at 3 km). Cheap for its area AND cheap for what it is.">Combined</button>
+        </div>
+      </div>
+
+      <div class="filter-group">
         <span class="filter-label">Neighborhood radius</span>
         <div class="seg" id="radius-seg">
           <button data-radius="3km" class="active">3&nbsp;km</button>
@@ -346,7 +362,7 @@ body{
         <div class="legend-gradient" id="legend-dot-gradient"></div>
         <div class="legend-ticks" id="legend-dot-ticks"><span>&minus;35%</span><span>0%</span><span>+35%</span></div>
         <div class="legend-note" id="legend-dot-note">Color = how a listing's price/m&sup2; compares to every other listing within 3&nbsp;km. Blue = below average (better deal), red = above.</div>
-        <div class="legend-dot-row"><span class="legend-dot"></span> hollow = too few nearby comparables (low confidence)</div>
+        <div class="legend-dot-row"><span class="legend-dot"></span> <span id="legend-hollow-note">hollow = too few nearby comparables (low confidence)</span></div>
         <div class="legend-divider"></div>
         <h3>Heatmap: price level vs. city</h3>
         <div class="legend-gradient" id="legend-heat-gradient"></div>
@@ -384,17 +400,55 @@ body{
   try {
 
   var DATA = JSON.parse(document.getElementById('map-data').textContent);
-  var ROWS = DATA.rows; // [id,lat,lon,price_k,area,build_year,floor,floor_total,rooms_idx,cond_idx,btype_idx,district_idx,complex_idx,spatial_pm_3km,reliable_3km,n_neighbors_3km,spatial_pm_1km,reliable_1km,n_neighbors_1km]
+  var ROWS = DATA.rows; // [id,lat,lon,price_k,area,build_year,floor,floor_total,rooms_idx,cond_idx,btype_idx,district_idx,complex_idx,spatial_pm_3km,reliable_3km,n_neighbors_3km,spatial_pm_1km,reliable_1km,n_neighbors_1km,residual_pm,residual_reliable,residual_z100,predicted_pm2,composite_pm]
   var F = {ID:0,LAT:1,LON:2,PRICE_K:3,AREA:4,BUILD_YEAR:5,FLOOR:6,FLOOR_TOTAL:7,ROOMS:8,COND:9,BTYPE:10,DISTRICT:11,COMPLEX:12,
-    SPATIAL_PM_3KM:13,RELIABLE_3KM:14,NEIGHBORS_3KM:15,SPATIAL_PM_1KM:16,RELIABLE_1KM:17,NEIGHBORS_1KM:18};
+    SPATIAL_PM_3KM:13,RELIABLE_3KM:14,NEIGHBORS_3KM:15,SPATIAL_PM_1KM:16,RELIABLE_1KM:17,NEIGHBORS_1KM:18,
+    RESIDUAL_PM:19,RESIDUAL_RELIABLE:20,RESIDUAL_Z100:21,PREDICTED_PM2:22,COMPOSITE_PM:23};
   var CLAMP = DATA.meta.spatial_pct_clamp; // 0.35
+  var RESIDUAL_CLAMP = DATA.meta.residual_pct_clamp || CLAMP;
+  var COMPOSITE_CLAMP = DATA.meta.composite_clamp || 2.5;
+  var STRONG_DEAL_Z = DATA.meta.strong_deal_z || -1.5;
   var HEAT_CLAMP = DATA.meta.heat_pct_clamp; // 0.5
   var CITY_MEDIAN = DATA.meta.city_median_price_m2;
 
-  // ---------- active-radius accessors (3km/1km toggle) ----------
+  // ---------- per-signal accessors ----------
   function spatialPM(r){ return state.radius==='3km' ? r[F.SPATIAL_PM_3KM] : r[F.SPATIAL_PM_1KM]; }
-  function isReliable(r){ return (state.radius==='3km' ? r[F.RELIABLE_3KM] : r[F.RELIABLE_1KM]) === 1; }
+  function spatialReliable(r){ return (state.radius==='3km' ? r[F.RELIABLE_3KM] : r[F.RELIABLE_1KM]) === 1; }
   function neighborCount(r){ return state.radius==='3km' ? r[F.NEIGHBORS_3KM] : r[F.NEIGHBORS_1KM]; }
+  function residualPM(r){ return r[F.RESIDUAL_PM]; }
+  function residualReliable(r){ return r[F.RESIDUAL_RELIABLE] === 1; }
+  function isStrongDeal(r){ return residualReliable(r) && r[F.RESIDUAL_Z100]!=null && r[F.RESIDUAL_Z100]/100 <= STRONG_DEAL_Z; }
+
+  // ---------- active-mode accessors (Neighborhood / Model / Combined) ----------
+  // dealValue: lower = better deal, in "permille of clamp-able units" so one
+  // diverging color scale serves all modes. Percent modes are permille of
+  // price; Combined is the composite z-score x1000, sign-flipped (the
+  // score itself is higher = better).
+  function dealValue(r){
+    if(state.mode==='spatial') return spatialPM(r);
+    if(state.mode==='residual') return residualPM(r);
+    var c = r[F.COMPOSITE_PM];
+    return c==null ? null : -c;
+  }
+  function activeClamp(){
+    if(state.mode==='spatial') return CLAMP*1000;
+    if(state.mode==='residual') return RESIDUAL_CLAMP*1000;
+    return COMPOSITE_CLAMP*1000;
+  }
+  function isReliable(r){
+    if(state.mode==='spatial') return spatialReliable(r);
+    if(state.mode==='residual') return residualReliable(r);
+    // Combined: the composite is built from the 3km spatial signal, so
+    // its confidence is "both inputs trustworthy" regardless of the radius toggle.
+    return r[F.COMPOSITE_PM]!=null && residualReliable(r) && r[F.RELIABLE_3KM]===1;
+  }
+  // Short label for lists: "-12.3%" in percent modes, "+1.42" in Combined.
+  function formatDeal(r){
+    var v = dealValue(r);
+    if(v==null) return '—';
+    if(state.mode==='both') return ((-v/1000)>=0?'+':'') + (-v/1000).toFixed(2);
+    return (v/10).toFixed(1) + '%';
+  }
 
   // ---------- point-in-polygon (ray casting; lat/lon as y/x, fine at city scale) ----------
   function pointInPolygon(lat, lon, poly){
@@ -421,10 +475,11 @@ body{
     priceMin: PRICE_MIN, priceMax: PRICE_MAX,
     areaMin: AREA_MIN, areaMax: AREA_MAX,
     showLowConf: false,
-    radius: '3km', // toggles the dot-ranking neighborhood radius (3km/1km)
+    mode: 'spatial', // dot-ranking signal: 'spatial' | 'residual' | 'both'
+    radius: '3km', // neighborhood radius for the spatial signal (3km/1km)
     highlightTop: false, highlightN: 30,
     areaPolygon: null, // lasso-selected area, array of [lat,lon], or null
-    selectedId: null,
+    selectedId: null, selectedIdx: -1,
   };
 
   // ---------- color scale ----------
@@ -434,9 +489,10 @@ body{
   var css = getComputedStyle(document.documentElement);
   function tok(name){return css.getPropertyValue(name).trim();}
   function dealColor(pm){
-    // pm: permille, e.g. -150 = -15%. Diverging: good(<0) .. mid(0) .. bad(>0), clamped at CLAMP*1000
+    // pm: the active mode's dealValue (permille; lower = better). Diverging:
+    // good(<0) .. mid(0) .. bad(>0), clamped at the active mode's clamp.
     if(pm==null) return tok('--text-muted');
-    var clampPm = CLAMP*1000;
+    var clampPm = activeClamp();
     var t = Math.max(-1,Math.min(1, pm/clampPm)); // -1..1
     var good = hexToRgb(tok('--deal-good')), bad = hexToRgb(tok('--deal-bad')), mid = hexToRgb(tok('--deal-mid'));
     if(t<0){ return rgbToHex([0,1,2].map(function(i){return lerp(mid[i],good[i], -t);})); }
@@ -477,7 +533,6 @@ body{
 
   var map = L.map('map', {preferCanvas:true, zoomControl:true}).setView(ASTANA_CENTER, 12);
   map.invalidateSize();
-  var canvasRenderer = L.canvas({padding:0.5});
 
   var isDark = function(){
     var stamp = document.documentElement.getAttribute('data-theme');
@@ -500,39 +555,356 @@ body{
   // (multi-second render hang) inside the artifact's sandboxed iframe,
   // so it's deliberately avoided here.
   var basemapLayer = L.imageOverlay(BASEMAP_SRC, basemapBounds, {
+    pane: 'tilePane',   // keep it under the heat pane (z 390) and the dots (overlayPane, z 400)
     opacity: isDark() ? 0.42 : 0.92,
     attribution: '&copy; OpenStreetMap contributors',
   });
   basemapLayer.addTo(map);
   basemapLayer.on('error', function(){ document.getElementById('map-fallback-note').style.display = 'block'; });
 
-  var svgRenderer = L.svg({padding:0.5});
-  var markerLayer = L.layerGroup();
-  var haloLayer = L.layerGroup().addTo(map);
-  var selectionLayer = L.layerGroup().addTo(map);
-  var markers = [];
+  var svgRenderer = L.svg({padding:0.5}); // only the lasso area outline uses this
 
-  function markerStyle(r){
-    var rel = isReliable(r);
-    var pm = spatialPM(r);
-    return {
-      weight: rel ? 1 : 1.2,
-      color: rel ? dealColor(pm) : tok('--text-muted'),
-      fillColor: dealColor(pm),
-      fillOpacity: rel ? 0.8 : 0,
-      opacity: 0.9,
-    };
+  // ---------- dots + halos: one canvas each, no per-listing objects ----------
+  // 31k L.circleMarkers meant 31k layer objects that Leaflet re-added one by
+  // one on every filter change (~100 ms), re-styled one by one on every mode
+  // switch (~350 ms), re-drew one by one on every zoom step and hit-tested
+  // one by one on every mouse move. Instead: typed arrays hold each listing's
+  // projected position, its filter state and its color bin; the dots are one
+  // WebGL point-sprite draw call (a 2D-canvas sprite pass as fallback), and
+  // clicks/hover are a distance scan over the projected positions.
+  var N = ROWS.length;
+  var ZREF = 12; // world pixel coords are cached at this zoom and scaled by 2^(z-ZREF)
+  var WX = new Float64Array(N), WY = new Float64Array(N);
+  var shown = new Uint8Array(N);        // passes the current filters
+  var styleCode = new Int16Array(N);    // color bin per listing (see styleFor)
+  var ROW_INDEX = new Map();
+  ROWS.forEach(function(r, i){
+    var p = map.project([r[F.LAT], r[F.LON]], ZREF);
+    WX[i] = p.x; WY[i] = p.y;
+    ROW_INDEX.set(r, i);
+  });
+  // Local origin for the float32 GPU positions: world px at ZREF are ~7e5,
+  // which float32 can't hold to sub-pixel precision once scaled up 64x.
+  var WX0 = 0, WY0 = 0;
+  for(var wi=0; wi<N; wi++){ WX0 += WX[wi]; WY0 += WY[wi]; }
+  WX0 /= (N||1); WY0 /= (N||1);
+
+  var DOT_R = 4.5, NBINS = 41;
+  var CODE_MUTED = NBINS, CODE_HOLLOW = NBINS + 1, NCODES = NBINS + 2;
+  function styleFor(r){
+    if(!isReliable(r)) return CODE_HOLLOW;
+    var pm = dealValue(r);
+    if(pm==null) return CODE_MUTED;
+    var t = Math.max(-1, Math.min(1, pm/activeClamp()));
+    return Math.round((t+1)/2*(NBINS-1));
+  }
+  function codeColor(code){
+    return (code===CODE_HOLLOW || code===CODE_MUTED) ? tok('--text-muted') : dealColor((code/(NBINS-1)*2-1)*activeClamp());
   }
 
-  ROWS.forEach(function(r){
-    var m = L.circleMarker([r[F.LAT], r[F.LON]], Object.assign({renderer: canvasRenderer, radius: 4.5}, markerStyle(r)));
-    m._row = r;
-    m.on('click', function(){ showPopup(m); selectRow(r); });
-    markers.push(m);
+  // Shared by the click and hover handlers, against the map's resting
+  // projection (both only fire between moves).
+  function hitTest(pt){
+    var scale = map.getZoomScale(map.getZoom(), ZREF), o = map.getPixelOrigin();
+    var ox = o.x + pt.x, oy = o.y + pt.y;
+    var best = -1, bd = (DOT_R+2)*(DOT_R+2), lim = DOT_R+2;
+    for(var i=0;i<N;i++){
+      if(!shown[i]) continue;
+      var dx = WX[i]*scale - ox;
+      if(dx > lim || dx < -lim) continue;
+      var dy = WY[i]*scale - oy, d = dx*dx + dy*dy;
+      if(d <= bd){ bd = d; best = i; }
+    }
+    return best;
+  }
+
+  // L.Renderer supplies the padded bounds bookkeeping and the CSS zoom
+  // animation transform; this adds a canvas container sized in device
+  // pixels, coalesced redraws and a hook for subclasses' contexts.
+  var CanvasBase = L.Renderer.extend({
+    options: {padding: 0.25},
+    _initContainer: function(){
+      var c = this._container = document.createElement('canvas');
+      this._initContext(c);
+      if(this.options.onClick) L.DomEvent.on(c, 'click', this.options.onClick, this);
+      if(this.options.onMouseMove) L.DomEvent.on(c, 'mousemove', this.options.onMouseMove, this);
+    },
+    // Detach only: the canvas, its context (and for WebGL the compiled
+    // program + uploaded buffers, ~200 ms to rebuild) survive the "Show
+    // dots" toggle -- L.Renderer.onAdd reuses this._container when set.
+    _destroyContainer: function(){
+      L.DomUtil.remove(this._container);
+    },
+    _update: function(){
+      if(this._map._animatingZoom && this._bounds) return; // the CSS transform carries the animation
+      L.Renderer.prototype._update.call(this);
+      var b = this._bounds, size = b.getSize(), c = this._container;
+      var dpr = window.devicePixelRatio || 1;
+      var w = Math.round(size.x*dpr), h = Math.round(size.y*dpr);
+      L.DomUtil.setPosition(c, b.min);
+      if(c.width !== w || c.height !== h){ // resizing clears + reallocates the buffer
+        c.width = w; c.height = h;
+        c.style.width = size.x + 'px'; c.style.height = size.y + 'px';
+      }
+      this._dpr = dpr;
+      this._draw();
+    },
+    requestRedraw: function(){
+      if(this._redrawPending || !this._map) return;
+      this._redrawPending = true;
+      var self = this;
+      requestAnimationFrame(function(){ self._redrawPending = false; if(self._map && self._container) self._draw(); });
+    },
+    _view: function(){
+      var b = this._bounds;
+      // Origin for this layer's own center/zoom (not the map's live one,
+      // which already points at the target zoom mid-animation).
+      var origin = this._map._getNewPixelOrigin(this._center, this._zoom);
+      return {scale: this._map.getZoomScale(this._zoom, ZREF), ox: origin.x, oy: origin.y, dpr: this._dpr,
+        minX: b.min.x, minY: b.min.y, maxX: b.max.x, maxY: b.max.y};
+    },
   });
 
+  // 2D canvas with a draw callback (halos, and the dot fallback).
+  var CanvasLayer = CanvasBase.extend({
+    initialize: function(draw, options){
+      L.Renderer.prototype.initialize.call(this, options);
+      this._drawFn = draw;
+    },
+    _initContext: function(c){ this._ctx = c.getContext('2d'); },
+    _draw: function(){
+      var ctx = this._ctx, dpr = this._dpr, b = this._bounds;
+      ctx.setTransform(1,0,0,1,0,0);
+      ctx.clearRect(0,0,this._container.width,this._container.height);
+      ctx.setTransform(dpr,0,0,dpr, -b.min.x*dpr, -b.min.y*dpr); // draw in layer-point coords
+      this._drawFn(ctx, this._view());
+    },
+  });
+
+  // WebGL point sprites: all 31k dots in one draw call. Cheap enough to
+  // redraw on every 'move' frame, so no padding: the canvas is exactly the
+  // viewport and follows the drag pixel for pixel.
+  var GL_VS = [
+    'attribute vec2 a_pos; attribute vec4 a_col;',
+    'uniform float u_scale; uniform vec2 u_offset; uniform vec2 u_canvas; uniform float u_size;',
+    'varying vec4 v_col;',
+    'void main(){',
+    '  vec2 p = a_pos * u_scale + u_offset;',
+    '  vec2 clip = p / u_canvas * 2.0 - 1.0;',
+    '  gl_Position = a_col.a == 0.0 ? vec4(2.0, 2.0, 2.0, 1.0) : vec4(clip.x, -clip.y, 0.0, 1.0);',
+    '  gl_PointSize = u_size; v_col = a_col;',
+    '}'].join('\n');
+  var GL_FS = [
+    'precision mediump float;',
+    'varying vec4 v_col; uniform float u_sizeCss; uniform float u_r;',
+    'void main(){',
+    '  float dist = length((gl_PointCoord - 0.5) * u_sizeCss);',
+    '  float hollow = step(v_col.a, 0.6);',
+    '  float lw = 1.0 + 0.2 * hollow;',
+    '  float ring = 1.0 - smoothstep(lw * 0.5 - 0.35, lw * 0.5 + 0.35, abs(dist - u_r));',
+    '  float inside = 1.0 - smoothstep(u_r - 0.85, u_r - 0.15, dist);',
+    '  float a = max(inside * 0.8 * (1.0 - hollow), ring * 0.9);',
+    '  gl_FragColor = vec4(v_col.rgb * a, a);',
+    '}'].join('\n');
+  var glPos = new Float32Array(N*2);
+  for(var gi=0; gi<N; gi++){ glPos[gi*2] = WX[gi]-WX0; glPos[gi*2+1] = WY[gi]-WY0; }
+  var glCol = new Uint8Array(N*4); // rgb + alpha: 255 filled, 128 hollow, 0 hidden
+  var colorTable = null;
+  function syncColors(){
+    if(!colorTable){
+      colorTable = [];
+      for(var c=0;c<NCODES;c++) colorTable.push(hexToRgb(codeColor(c)));
+    }
+    for(var i=0;i<N;i++){
+      var rgb = colorTable[styleCode[i]], j = i*4;
+      glCol[j] = rgb[0]; glCol[j+1] = rgb[1]; glCol[j+2] = rgb[2];
+      glCol[j+3] = !shown[i] ? 0 : styleCode[i]===CODE_HOLLOW ? 128 : 255;
+    }
+    if(dotLayer._gl) dotLayer._uploadColors();
+  }
+  var GLDotLayer = CanvasBase.extend({
+    options: {padding: 0},
+    getEvents: function(){
+      var ev = L.Renderer.prototype.getEvents.call(this);
+      ev.move = this._onMove;
+      return ev;
+    },
+    _onMove: function(){ if(!this._map._animatingZoom) this._update(); },
+    _initContext: function(c){
+      var gl = this._gl = c.getContext('webgl', {alpha:true, antialias:false, premultipliedAlpha:true, depth:false, stencil:false, preserveDrawingBuffer:false});
+      if(!gl) throw new Error('no webgl');
+      var self = this;
+      c.addEventListener('webglcontextlost', function(e){ e.preventDefault(); self._lost = true; });
+      c.addEventListener('webglcontextrestored', function(){ self._lost = false; self._setup(); self.requestRedraw(); });
+      this._setup();
+    },
+    _setup: function(){
+      var gl = this._gl;
+      function shader(type, src){
+        var s = gl.createShader(type); gl.shaderSource(s, src); gl.compileShader(s);
+        if(!gl.getShaderParameter(s, gl.COMPILE_STATUS)) throw new Error('shader: ' + gl.getShaderInfoLog(s));
+        return s;
+      }
+      var prog = this._prog = gl.createProgram();
+      gl.attachShader(prog, shader(gl.VERTEX_SHADER, GL_VS));
+      gl.attachShader(prog, shader(gl.FRAGMENT_SHADER, GL_FS));
+      gl.linkProgram(prog);
+      if(!gl.getProgramParameter(prog, gl.LINK_STATUS)) throw new Error('link: ' + gl.getProgramInfoLog(prog));
+      gl.useProgram(prog);
+      this._u = {};
+      ['u_scale','u_offset','u_canvas','u_size','u_sizeCss','u_r'].forEach(function(n){ this._u[n] = gl.getUniformLocation(prog, n); }, this);
+      this._posBuf = gl.createBuffer();
+      gl.bindBuffer(gl.ARRAY_BUFFER, this._posBuf);
+      gl.bufferData(gl.ARRAY_BUFFER, glPos, gl.STATIC_DRAW);
+      var aPos = gl.getAttribLocation(prog, 'a_pos');
+      gl.enableVertexAttribArray(aPos); gl.vertexAttribPointer(aPos, 2, gl.FLOAT, false, 0, 0);
+      this._colBuf = gl.createBuffer();
+      gl.bindBuffer(gl.ARRAY_BUFFER, this._colBuf);
+      gl.bufferData(gl.ARRAY_BUFFER, glCol, gl.DYNAMIC_DRAW);
+      var aCol = gl.getAttribLocation(prog, 'a_col');
+      gl.enableVertexAttribArray(aCol); gl.vertexAttribPointer(aCol, 4, gl.UNSIGNED_BYTE, true, 0, 0);
+      gl.enable(gl.BLEND);
+      gl.blendFunc(gl.ONE, gl.ONE_MINUS_SRC_ALPHA); // premultiplied
+      gl.disable(gl.DEPTH_TEST);
+      gl.clearColor(0,0,0,0);
+    },
+    _uploadColors: function(){
+      var gl = this._gl;
+      if(!gl || this._lost) return;
+      gl.bindBuffer(gl.ARRAY_BUFFER, this._colBuf);
+      gl.bufferSubData(gl.ARRAY_BUFFER, 0, glCol);
+      this.requestRedraw();
+    },
+    _draw: function(){
+      var gl = this._gl, c = this._container;
+      if(!gl || this._lost) return;
+      var v = this._view();
+      var sizeCss = DOT_R*2 + 3;
+      gl.viewport(0, 0, c.width, c.height);
+      gl.clear(gl.COLOR_BUFFER_BIT);
+      gl.uniform1f(this._u.u_scale, v.scale);
+      gl.uniform2f(this._u.u_offset, WX0*v.scale - v.ox - v.minX, WY0*v.scale - v.oy - v.minY);
+      gl.uniform2f(this._u.u_canvas, c.width/v.dpr, c.height/v.dpr);
+      gl.uniform1f(this._u.u_size, sizeCss*v.dpr);
+      gl.uniform1f(this._u.u_sizeCss, sizeCss);
+      gl.uniform1f(this._u.u_r, DOT_R);
+      gl.drawArrays(gl.POINTS, 0, N);
+    },
+  });
+
+  // 2D fallback: pre-rendered sprites in ONE atlas canvas (Chromium keeps
+  // small canvases in software, and drawing 31k times from one of those
+  // re-uploads a texture per call -- it stalled the GPU for ~1 s).
+  var SPRITE_CSS = 12, ATLAS_COLS = 8;
+  var atlas = null, atlasCell = 0, atlasDpr = 0;
+  function buildAtlas(dpr){
+    var cell = Math.ceil(SPRITE_CSS*dpr), rows = Math.ceil(NCODES/ATLAS_COLS);
+    var c = document.createElement('canvas');
+    c.width = Math.max(512, cell*ATLAS_COLS); c.height = Math.max(256, cell*rows); // big enough to stay GPU-backed
+    var ctx = c.getContext('2d');
+    for(var code=0; code<NCODES; code++){
+      var hollow = code===CODE_HOLLOW, col = codeColor(code);
+      ctx.save();
+      ctx.translate((code%ATLAS_COLS)*cell, Math.floor(code/ATLAS_COLS)*cell);
+      ctx.scale(cell/SPRITE_CSS, cell/SPRITE_CSS);
+      ctx.beginPath(); ctx.arc(SPRITE_CSS/2, SPRITE_CSS/2, DOT_R, 0, Math.PI*2);
+      if(!hollow){ ctx.globalAlpha = 0.8; ctx.fillStyle = col; ctx.fill(); }
+      ctx.globalAlpha = 0.9; ctx.lineWidth = hollow ? 1.2 : 1; ctx.strokeStyle = col; ctx.stroke();
+      ctx.restore();
+    }
+    atlas = c; atlasCell = cell; atlasDpr = dpr;
+  }
+  function drawDots2D(ctx, v){
+    var dpr = v.dpr;
+    if(!atlas || atlasDpr !== dpr) buildAtlas(dpr);
+    var half = SPRITE_CSS/2, pad = DOT_R + 2, cell = atlasCell;
+    var minX = v.minX - pad, maxX = v.maxX + pad, minY = v.minY - pad, maxY = v.maxY + pad;
+    for(var i=0;i<N;i++){
+      if(!shown[i]) continue;
+      var x = WX[i]*v.scale - v.ox, y = WY[i]*v.scale - v.oy;
+      if(x < minX || x > maxX || y < minY || y > maxY) continue;
+      x = Math.round(x*dpr)/dpr; y = Math.round(y*dpr)/dpr; // device-pixel aligned = crisp sprites
+      var code = styleCode[i];
+      ctx.drawImage(atlas, (code%ATLAS_COLS)*cell, Math.floor(code/ATLAS_COLS)*cell, cell, cell, x-half, y-half, SPRITE_CSS, SPRITE_CSS);
+    }
+  }
+
+  var hoverPending = false;
+  var dotEvents = {
+    onClick: function(e){
+      if(map.dragging && map.dragging.moved()) return; // a drag's trailing click
+      var idx = hitTest(map.mouseEventToLayerPoint(e));
+      if(idx < 0) return;
+      // Otherwise the click reaches the map, whose handler clears the selection.
+      L.DomEvent.stopPropagation(e);
+      openListing(idx, false); // best deal of the pile under the cursor first
+    },
+    onMouseMove: function(e){
+      if(hoverPending) return;
+      hoverPending = true;
+      var self = this;
+      requestAnimationFrame(function(){
+        hoverPending = false;
+        if(!self._container || (map.dragging && map.dragging.moving())) return;
+        var hit = hitTest(map.mouseEventToLayerPoint(e)) >= 0;
+        L.DomUtil[hit ? 'addClass' : 'removeClass'](self._container, 'leaflet-interactive');
+      });
+    },
+  };
+  var dotLayer, DOTS_GL = false;
+  try {
+    dotLayer = new GLDotLayer(dotEvents);
+    // Probe the context up front so the fallback decision is made once, here.
+    var probe = document.createElement('canvas').getContext('webgl');
+    if(!probe) throw new Error('no webgl');
+    DOTS_GL = true;
+  } catch(e) {
+    dotLayer = new CanvasLayer(drawDots2D, dotEvents);
+  }
+
+  // Highlight halos + the selection ring share a second canvas in a pane
+  // above the dots that ignores the pointer, so clicks still reach the dots.
+  var haloPane = map.createPane('halo');
+  haloPane.style.zIndex = 410;
+  haloPane.style.pointerEvents = 'none';
+  var highlightIdx = [];
+  function drawHalos(ctx, v){
+    var pad = 16;
+    function pos(i){
+      var x = WX[i]*v.scale - v.ox, y = WY[i]*v.scale - v.oy;
+      if(x < v.minX-pad || x > v.maxX+pad || y < v.minY-pad || y > v.maxY+pad) return null;
+      return [x,y];
+    }
+    if(state.highlightTop && highlightIdx.length){
+      var accent = tok('--accent');
+      ctx.beginPath();
+      highlightIdx.forEach(function(i){
+        var p = pos(i); if(!p) return;
+        ctx.moveTo(p[0]+12, p[1]); ctx.arc(p[0], p[1], 12, 0, Math.PI*2);
+      });
+      ctx.globalAlpha = 0.16; ctx.fillStyle = accent; ctx.fill();
+      ctx.globalAlpha = 1; ctx.lineWidth = 3.5; ctx.strokeStyle = accent; ctx.stroke();
+    }
+    if(state.selectedIdx >= 0){
+      var s = pos(state.selectedIdx);
+      if(s){
+        ctx.beginPath(); ctx.arc(s[0], s[1], 11, 0, Math.PI*2);
+        ctx.globalAlpha = 0.95; ctx.lineWidth = 3; ctx.strokeStyle = tok('--text-primary'); ctx.stroke();
+        ctx.globalAlpha = 1;
+      }
+    }
+  }
+  var haloLayer = new CanvasLayer(drawHalos, {pane: 'halo'}).addTo(map);
+
+  // After `shown` or `styleCode` change: the GL layer needs its per-vertex
+  // colors/alphas re-uploaded, the 2D fallback just redraws.
+  function redrawDots(){
+    if(DOTS_GL) syncColors(); else dotLayer.requestRedraw();
+  }
   function restyleMarkers(){
-    markers.forEach(function(m){ m.setStyle(markerStyle(m._row)); });
+    atlas = null; colorTable = null; // colors depend on the active mode's clamp
+    for(var i=0;i<N;i++) styleCode[i] = styleFor(ROWS[i]);
+    redrawDots();
   }
 
   function buildDetailHtml(r){
@@ -541,21 +913,47 @@ body{
     var cn = complexName(r[F.COMPLEX]);
     var title = cn || 'Standalone listing';
     var radiusLabel = state.radius==='3km' ? '3km' : '1km';
-    var pm = spatialPM(r);
+    var pctPhrase = function(pm, what){
+      var pct = pm/10, dir = pct < 0 ? 'below' : 'above';
+      return Math.abs(pct).toFixed(1) + '% ' + dir + ' ' + what;
+    };
+    // Each signal as {text, sub, reliable, value, strong} -- the active
+    // mode's one becomes the colored headline, the others go underneath.
+    var spatialSig = (function(){
+      var pm = spatialPM(r);
+      if(pm==null) return {text:'No nearby comparables', sub:'', reliable:false, value:null};
+      return {text: pctPhrase(pm, 'its ' + radiusLabel + ' neighborhood avg') + (Math.abs(pm) >= CLAMP*1000 ? ' (clamped)' : ''),
+        sub: 'based on ' + neighborCount(r) + ' nearby listings', reliable: spatialReliable(r), value: pm};
+    })();
+    var residualSig = (function(){
+      var pm = residualPM(r);
+      if(pm==null) return {text:'Outside the model’s fit sample', sub:'', reliable:false, value:null};
+      var exp = r[F.PREDICTED_PM2]!=null ? ('expected ≈ ' + r[F.PREDICTED_PM2].toLocaleString('en-US') + ' ₸/m² for this flat at this address') : '';
+      return {text: pctPhrase(pm, 'model-expected price') + (Math.abs(pm) >= RESIDUAL_CLAMP*1000 ? ' (clamped)' : ''),
+        sub: exp, reliable: residualReliable(r), value: pm, strong: isStrongDeal(r)};
+    })();
+    var compositeSig = (function(){
+      var c = r[F.COMPOSITE_PM];
+      if(c==null) return {text:'Combined score unavailable', sub:'', reliable:false, value:null};
+      return {text: 'Combined deal score ' + ((c>=0?'+':'') + (c/1000).toFixed(2)), sub:'neighborhood (3 km) + model, robust z-scores averaged',
+        reliable: residualReliable(r) && r[F.RELIABLE_3KM]===1, value: -c};
+    })();
+    var active = state.mode==='spatial' ? spatialSig : state.mode==='residual' ? residualSig : compositeSig;
     var signalHtml;
-    if(pm==null){
-      signalHtml = '<div class="popup-signal low-conf">No nearby comparables &mdash; spatial score unavailable</div>';
+    if(active.value==null){
+      signalHtml = '<div class="popup-signal low-conf">' + active.text + '</div>';
     } else {
-      var pct = pm/10; // permille -> %
-      var clamped = Math.abs(pm) >= CLAMP*1000;
-      var dir = pct < 0 ? 'below' : 'above';
-      var label = Math.abs(pct).toFixed(1) + '% ' + dir + ' its ' + radiusLabel + ' neighborhood avg' + (clamped? ' (clamped)':'');
-      var bg = dealColor(pm);
-      var rel = isReliable(r);
-      var cls = rel ? '' : ' low-conf';
-      signalHtml = '<div class="popup-signal' + cls + '" style="' + (rel ? ('background:'+bg+'22;color:'+bg) : '') + '">' + label +
-        (rel ? '' : ' &mdash; low confidence') + '<br><span style="font-weight:400;opacity:.8">based on ' + neighborCount(r) + ' nearby listings</span></div>';
+      var bg = dealColor(active.value);
+      var cls = active.reliable ? '' : ' low-conf';
+      signalHtml = '<div class="popup-signal' + cls + '" style="' + (active.reliable ? ('background:'+bg+'22;color:'+bg) : '') + '">' + active.text +
+        (active.reliable ? '' : ' &mdash; low confidence') + (active.strong ? '<span class="strong-badge">strong deal</span>' : '') +
+        (active.sub ? '<span class="sub">' + active.sub + '</span>' : '') + '</div>';
     }
+    var others = [];
+    if(state.mode!=='spatial') others.push('Neighborhood: <b>' + (spatialSig.value==null ? '—' : (spatialSig.value/10).toFixed(1) + '%') + '</b>' + (spatialSig.value!=null && !spatialSig.reliable ? ' (low conf.)' : ''));
+    if(state.mode!=='residual') others.push('Model: <b>' + (residualSig.value==null ? '—' : (residualSig.value/10).toFixed(1) + '%') + '</b>' + (residualSig.value!=null && !residualSig.reliable ? ' (low conf.)' : '') + (residualSig.strong && state.mode!=='residual' ? '<span class="strong-badge">strong</span>' : ''));
+    if(state.mode!=='both') others.push('Combined: <b>' + (compositeSig.value==null ? '—' : ((-compositeSig.value>=0?'+':'') + (-compositeSig.value/1000).toFixed(2))) + '</b>');
+    signalHtml += '<div class="popup-secondary">' + others.join(' &middot; ') + '</div>';
     return ''
       + '<div class="popup-title">' + title + '</div>'
       + '<div class="popup-price">' + priceStr + '</div>'
@@ -572,29 +970,86 @@ body{
       + '<a class="popup-link" href="https://krisha.kz/a/show/' + r[F.ID] + '" target="_blank" rel="noopener">View on krisha.kz &rarr;</a>';
   }
 
-  function showPopup(m){
+  // ---------- co-located listings ("stacks") ----------
+  // Many listings share one geocoded point (a complex address), so a click
+  // lands on a pile of dots. stackAt() gathers every shown listing drawn
+  // within one dot radius of the given one at the current zoom, best deal
+  // first, and the popup/card page through them.
+  var stack = {idxs: [], pos: 0};
+  function stackAt(idx){
+    var scale = map.getZoomScale(map.getZoom(), ZREF);
+    var x0 = WX[idx]*scale, y0 = WY[idx]*scale, lim = DOT_R, r2 = DOT_R*DOT_R;
+    var found = [];
+    for(var i=0;i<N;i++){
+      if(!shown[i]) continue;
+      var dx = WX[i]*scale - x0; if(dx>lim||dx<-lim) continue;
+      var dy = WY[i]*scale - y0;
+      if(dx*dx+dy*dy <= r2) found.push(i);
+    }
+    found.sort(function(a,b){
+      var va = dealValue(ROWS[a]), vb = dealValue(ROWS[b]);
+      if(va==null && vb==null) return 0; if(va==null) return 1; if(vb==null) return -1;
+      return va-vb;
+    });
+    return found;
+  }
+  function stackNavHtml(){
+    if(stack.idxs.length < 2) return '';
+    return '<div class="popup-stack"><button data-nav="-1" aria-label="Previous listing"' + (stack.pos===0 ? ' disabled' : '') + '>&lsaquo;</button>'
+      + '<span>' + (stack.pos+1) + ' of ' + stack.idxs.length + ' listings at this point &middot; best first</span>'
+      + '<button data-nav="1" aria-label="Next listing"' + (stack.pos===stack.idxs.length-1 ? ' disabled' : '') + '>&rsaquo;</button></div>';
+  }
+  function bindStackNav(root){
+    root.querySelectorAll('[data-nav]').forEach(function(btn){
+      L.DomEvent.on(btn, 'click', function(e){
+        L.DomEvent.stop(e);
+        openStack(stack.idxs, stack.pos + (+btn.getAttribute('data-nav')));
+      });
+    });
+  }
+  // Open listing #pos of a stack: popup on the point, ring + side card.
+  function openStack(idxs, pos){
+    stack.idxs = idxs; stack.pos = Math.max(0, Math.min(idxs.length-1, pos));
+    var r = ROWS[idxs[stack.pos]];
+    showPopup(r);
+    selectRow(r);
+  }
+  function openListing(idx, preferThis){
+    var idxs = stackAt(idx);
+    if(!idxs.length) idxs = [idx];
+    openStack(idxs, preferThis ? Math.max(0, idxs.indexOf(idx)) : 0);
+  }
+
+  function showPopup(r){
     // autoPan:false -- an animated pan on every click, combined with the
-    // 31k-marker canvas layer and dual heat layers, was pathologically
-    // slow to repaint inside the artifact's sandboxed iframe.
-    L.popup({maxWidth:280, autoPan:false}).setLatLng(m.getLatLng()).setContent(buildDetailHtml(m._row)).openOn(map);
+    // dot canvas and dual heat layers, was pathologically slow to repaint
+    // inside the artifact's sandboxed iframe.
+    state.popupRow = r;
+    var p = L.popup({maxWidth:280, autoPan:false}).setLatLng([r[F.LAT], r[F.LON]]).setContent(stackNavHtml() + buildDetailHtml(r)).openOn(map);
+    bindStackNav(p.getElement());
+  }
+  function refreshPopup(){
+    var p = map._popup;
+    if(p && p.isOpen() && state.popupRow){ p.setContent(stackNavHtml() + buildDetailHtml(state.popupRow)); bindStackNav(p.getElement()); }
   }
 
   function selectRow(r){
     state.selectedId = r[F.ID];
-    selectionLayer.clearLayers();
-    L.circleMarker([r[F.LAT], r[F.LON]], {
-      renderer: svgRenderer, radius: 11, weight: 3, color: tok('--text-primary'),
-      fillOpacity: 0, className: 'selection-ring',
-    }).addTo(selectionLayer);
+    state.selectedIdx = ROW_INDEX.get(r);
+    haloLayer.requestRedraw();
     var card = document.getElementById('selection-card');
     card.classList.add('show');
-    card.innerHTML = '<button class="close-btn" id="selection-close" aria-label="Close">&times;</button><div class="eyebrow">Selected</div>' + buildDetailHtml(r);
+    card.innerHTML = '<button class="close-btn" id="selection-close" aria-label="Close">&times;</button><div class="eyebrow">Selected</div>' + stackNavHtml() + buildDetailHtml(r);
     document.getElementById('selection-close').addEventListener('click', clearSelection);
+    bindStackNav(card);
   }
   function clearSelection(){
     state.selectedId = null;
-    selectionLayer.clearLayers();
+    state.selectedIdx = -1;
+    stack.idxs = []; stack.pos = 0;
+    haloLayer.requestRedraw();
     document.getElementById('selection-card').classList.remove('show');
+    map.closePopup();
   }
   map.on('click', function(){
     if(!document.getElementById('map-wrap').classList.contains('lasso-active')) clearSelection();
@@ -606,10 +1061,83 @@ body{
   // hot=above) since leaflet.heat has no native diverging gradient; each
   // point's own price/m2 contributes, and the kernel blur does the "local
   // area average" smoothing.
-  var heatLayerCold = L.heatLayer([], {radius:30, blur:34, maxZoom:15, max:1.0,
+  // Own pane just below the overlay pane (z 400, where the dot canvas lives):
+  // otherwise toggling the heatmap off/on re-appends its canvases after the
+  // dots and paints over them.
+  // (leaflet.heat 0.2.0 ignores the `pane` option and hardcodes overlayPane,
+  // so the canvases are re-parented by hand in addHeatLayers.)
+  var heatPane = map.createPane('heat');
+  heatPane.style.zIndex = 390;
+  // Render the heat at half resolution and let CSS scale it up: each redraw
+  // is a full-canvas getImageData readback plus a per-pixel colorize loop,
+  // so quartering the pixels quarters the ~25 ms per layer per zoom step,
+  // and a kernel-blurred surface loses nothing visible at 2x upscaling.
+  // (_reset/_redraw are the plugin's own 0.2.0 code with the scale applied.)
+  var HEAT_SCALE = 0.5;
+  L.HeatLayer.include({
+    _reset: function(){
+      var topLeft = this._map.containerPointToLayerPoint([0,0]);
+      L.DomUtil.setPosition(this._canvas, topLeft);
+      var size = this._map.getSize(), w = Math.ceil(size.x*HEAT_SCALE), h = Math.ceil(size.y*HEAT_SCALE);
+      if(this._heat._width !== w) this._canvas.width = this._heat._width = w;
+      if(this._heat._height !== h) this._canvas.height = this._heat._height = h;
+      this._canvas.style.width = size.x + 'px'; this._canvas.style.height = size.y + 'px';
+      this._redraw();
+    },
+    _redraw: function(){
+      if(!this._map) return;
+      var data = [], r = this._heat._r, size = this._map.getSize().multiplyBy(HEAT_SCALE);
+      var bounds = new L.Bounds(L.point([-r,-r]), size.add([r,r]));
+      var max = this.options.max===undefined ? 1 : this.options.max;
+      var maxZoom = this.options.maxZoom===undefined ? this._map.getMaxZoom() : this.options.maxZoom;
+      var v = 1/Math.pow(2, Math.max(0, Math.min(maxZoom - this._map.getZoom(), 12)));
+      var cellSize = r/2, grid = [], panePos = this._map._getMapPanePos().multiplyBy(HEAT_SCALE);
+      var offsetX = panePos.x % cellSize, offsetY = panePos.y % cellSize;
+      var i, len, p, cell, x, y, j, len2, k;
+      for(i=0, len=this._latlngs.length; i<len; i++){
+        p = this._map.latLngToContainerPoint(this._latlngs[i]).multiplyBy(HEAT_SCALE);
+        if(!bounds.contains(p)) continue;
+        x = Math.floor((p.x - offsetX)/cellSize) + 2;
+        y = Math.floor((p.y - offsetY)/cellSize) + 2;
+        var alt = this._latlngs[i].alt!==undefined ? this._latlngs[i].alt : this._latlngs[i][2]!==undefined ? +this._latlngs[i][2] : 1;
+        k = alt*v;
+        grid[y] = grid[y] || [];
+        cell = grid[y][x];
+        if(!cell){ grid[y][x] = [p.x, p.y, k]; }
+        else {
+          cell[0] = (cell[0]*cell[2] + p.x*k)/(cell[2] + k);
+          cell[1] = (cell[1]*cell[2] + p.y*k)/(cell[2] + k);
+          cell[2] += k;
+        }
+      }
+      for(i=0, len=grid.length; i<len; i++){
+        if(!grid[i]) continue;
+        for(j=0, len2=grid[i].length; j<len2; j++){
+          cell = grid[i][j];
+          if(cell) data.push([Math.round(cell[0]), Math.round(cell[1]), Math.min(cell[2], max)]);
+        }
+      }
+      this._heat.data(data).draw(this.options.minOpacity);
+      this._frame = null;
+    },
+  });
+  var heatLayerCold = L.heatLayer([], {radius:30*HEAT_SCALE, blur:34*HEAT_SCALE, maxZoom:15, max:1.0,
     gradient:{0.0:'rgba(0,0,0,0)', 1.0: tok('--deal-good')}});
-  var heatLayerHot = L.heatLayer([], {radius:30, blur:34, maxZoom:15, max:1.0,
+  var heatLayerHot = L.heatLayer([], {radius:30*HEAT_SCALE, blur:34*HEAT_SCALE, maxZoom:15, max:1.0,
     gradient:{0.0:'rgba(0,0,0,0)', 1.0: tok('--deal-bad')}});
+  function addHeatLayers(){
+    [heatLayerCold, heatLayerHot].forEach(function(h){
+      h.addTo(map);
+      if(h._canvas && h._canvas.parentNode !== heatPane) heatPane.appendChild(h._canvas);
+    });
+  }
+  function removeHeatLayers(){
+    // onRemove detaches from overlayPane specifically -- put it back first.
+    [heatLayerCold, heatLayerHot].forEach(function(h){
+      if(h._canvas && h._canvas.parentNode === heatPane) map.getPane('overlayPane').appendChild(h._canvas);
+      map.removeLayer(h);
+    });
+  }
 
   // Kernel-blur smoothing makes the heat surface look the same whether
   // every point contributes or just a representative sample -- cap the
@@ -624,17 +1152,25 @@ body{
     return out;
   }
 
+  // leaflet.heat's setLatLngs() redraws unconditionally and dereferences
+  // this._map, which is null while the layer is toggled off -- so keep the
+  // latest points aside and only push them into layers that are on the map
+  // (the toggle handler applies the pending set when re-adding).
+  var pendingHeat = {cold: [], hot: []};
+  function setHeatPoints(cold, hot){
+    pendingHeat.cold = cold; pendingHeat.hot = hot;
+    if(map.hasLayer(heatLayerCold)) heatLayerCold.setLatLngs(cold);
+    if(map.hasLayer(heatLayerHot)) heatLayerHot.setLatLngs(hot);
+  }
+
   function refresh(){
-    markerLayer.clearLayers();
     var coldPoints = [], hotPoints = [];
-    var shownCount = 0;
-    var shownRows = [];
-    markers.forEach(function(m){
-      var r = m._row;
-      if(!passesFilter(r)) return;
-      shownCount++;
-      shownRows.push(r);
-      markerLayer.addLayer(m);
+    var shownRows = [], shownIdx = [];
+    for(var i=0;i<N;i++){
+      var r = ROWS[i];
+      if(!passesFilter(r)){ shown[i] = 0; continue; }
+      shown[i] = 1;
+      shownRows.push(r); shownIdx.push(i);
       var pm2 = (r[F.PRICE_K]!=null && r[F.AREA]) ? (r[F.PRICE_K]*1000/r[F.AREA]) : null;
       if(pm2!=null && CITY_MEDIAN){
         var devFrac = pm2/CITY_MEDIAN - 1;
@@ -642,68 +1178,78 @@ body{
         if(devFrac >= 0) hotPoints.push([r[F.LAT], r[F.LON], w]);
         else coldPoints.push([r[F.LAT], r[F.LON], w]);
       }
-    });
-    heatLayerCold.setLatLngs(downsample(coldPoints));
-    heatLayerHot.setLatLngs(downsample(hotPoints));
-    document.getElementById('count-pill').textContent = shownCount.toLocaleString('en-US') + ' listings shown';
+    }
+    redrawDots();
+    setHeatPoints(downsample(coldPoints), downsample(hotPoints));
+    document.getElementById('count-pill').textContent = shownRows.length.toLocaleString('en-US') + ' listings shown';
     renderDealList(shownRows);
-    renderHighlights(shownRows);
+    lastShownIdx = shownIdx;
+    renderHighlights(shownIdx);
   }
+  var lastShownIdx = [];
 
   function renderDealList(shownRows){
-    var filtered = shownRows.filter(function(r){return spatialPM(r)!=null;})
-      .sort(function(a,b){return spatialPM(a)-spatialPM(b);})
-      .slice(0,40);
+    var keyed = [];
+    for(var k=0;k<shownRows.length;k++){ var v = dealValue(shownRows[k]); if(v!=null) keyed.push([shownRows[k], v]); }
+    keyed.sort(function(a,b){return a[1]-b[1];});
+    var filtered = keyed.slice(0,40).map(function(c){ return c[0]; });
     var list = document.getElementById('deal-list');
     list.innerHTML = '';
     document.getElementById('deal-list-count').textContent = filtered.length ? ('top '+filtered.length) : '';
     filtered.forEach(function(r){
       var row = document.createElement('div');
       row.className = 'deal-row';
-      var pct = (spatialPM(r)/10).toFixed(1);
       var cn = complexName(r[F.COMPLEX]) || 'Standalone';
-      row.innerHTML = '<div class="top-line"><span class="complex">'+cn+'</span><span class="pct" style="color:'+dealColor(spatialPM(r))+'">'+pct+'%</span></div>'
+      var strong = (state.mode!=='spatial' && isStrongDeal(r)) ? '<span class="strong-badge">strong</span>' : '';
+      row.innerHTML = '<div class="top-line"><span class="complex">'+cn+strong+'</span><span class="pct" style="color:'+dealColor(dealValue(r))+'">'+formatDeal(r)+'</span></div>'
         + '<div class="meta">'+districtName(r[F.DISTRICT])+' · '+(r[F.PRICE_K]!=null?(r[F.PRICE_K]/1000).toFixed(1):'—')+'M ₸ · '+(r[F.AREA]||'—')+' m²</div>';
       row.addEventListener('click', function(){
-        var target = markers.find(function(m){return m._row===r;});
-        if(target){ map.flyTo(target.getLatLng(), 15, {duration:0.6}); setTimeout(function(){showPopup(target); selectRow(r);}, 650); }
+        map.flyTo([r[F.LAT], r[F.LON]], 15, {duration:0.6});
+        setTimeout(function(){ openListing(ROW_INDEX.get(r), true); }, 650);
       });
       list.appendChild(row);
     });
   }
 
-  function renderHighlights(shownRows){
-    haloLayer.clearLayers();
-    if(!state.highlightTop) return;
-    var top = shownRows.filter(function(r){ return spatialPM(r)!=null && isReliable(r); })
-      .sort(function(a,b){ return spatialPM(a)-spatialPM(b); })
-      .slice(0, state.highlightN);
-    top.forEach(function(r){
-      L.circleMarker([r[F.LAT], r[F.LON]], {
-        renderer: svgRenderer, radius: 12, weight: 3.5, color: tok('--accent'),
-        fillColor: tok('--accent'), fillOpacity: 0.16, className: 'sweet-spot-halo',
-        interactive: false,
-      }).addTo(haloLayer);
-    });
+  function renderHighlights(shownIdx){
+    highlightIdx = [];
+    if(state.highlightTop){
+      // Sort (index, value) pairs on a precomputed key rather than calling
+      // dealValue() inside the comparator ~500k times.
+      var cand = [];
+      for(var k=0;k<shownIdx.length;k++){
+        var r = ROWS[shownIdx[k]], v = dealValue(r);
+        if(v!=null && isReliable(r)) cand.push([shownIdx[k], v]);
+      }
+      cand.sort(function(a,b){ return a[1]-b[1]; });
+      highlightIdx = cand.slice(0, state.highlightN).map(function(c){ return c[0]; });
+    }
+    haloLayer.requestRedraw();
   }
 
-  markerLayer.addTo(map);
+  dotLayer.addTo(map);
   // Extra guard specifically for leaflet.heat: it throws synchronously if
   // the map container still reports zero size (see the getBoundingClientRect
   // note above) rather than degrading gracefully, so double-check right
   // before adding it and retry on the next frame if needed.
   if(map.getSize().x > 0 && map.getSize().y > 0){
-    heatLayerCold.addTo(map); heatLayerHot.addTo(map);
+    addHeatLayers();
   } else {
-    requestAnimationFrame(function(){ map.invalidateSize(); heatLayerCold.addTo(map); heatLayerHot.addTo(map); });
+    requestAnimationFrame(function(){
+      map.invalidateSize(); addHeatLayers();
+      setHeatPoints(pendingHeat.cold, pendingHeat.hot);
+    });
   }
 
   document.getElementById('layer-dots').addEventListener('change', function(e){
-    if(e.target.checked) markerLayer.addTo(map); else map.removeLayer(markerLayer);
+    if(e.target.checked) dotLayer.addTo(map); else map.removeLayer(dotLayer);
   });
   document.getElementById('layer-heat').addEventListener('change', function(e){
-    if(e.target.checked){ heatLayerCold.addTo(map); heatLayerHot.addTo(map); }
-    else { map.removeLayer(heatLayerCold); map.removeLayer(heatLayerHot); }
+    if(e.target.checked){
+      addHeatLayers();
+      setHeatPoints(pendingHeat.cold, pendingHeat.hot);
+    }
+    else { removeHeatLayers(); }
   });
 
   // ---------- lasso area-select tool ----------
@@ -758,7 +1304,13 @@ body{
   }
   function drawAreaOverlay(poly){
     if(areaOverlayLayer) map.removeLayer(areaOverlayLayer);
-    areaOverlayLayer = L.polygon(poly, {color: tok('--accent'), weight:2, fillOpacity:0.08, dashArray:'5,4', interactive:false}).addTo(map);
+    // renderer:svgRenderer -- WITHOUT this, Leaflet auto-picks a fresh
+    // canvas (the map prefers canvas), and an unrelated canvas element
+    // covering the map blocks every click to whatever's beneath it, even
+    // on empty/unpainted pixels -- unlike SVG, which lets clicks pass
+    // through. That silently broke clicking any dot once an area was
+    // selected.
+    areaOverlayLayer = L.polygon(poly, {renderer: svgRenderer, color: tok('--accent'), weight:2, fillOpacity:0.08, dashArray:'5,4', interactive:false}).addTo(map);
   }
   function clearAreaOverlay(){
     if(areaOverlayLayer){ map.removeLayer(areaOverlayLayer); areaOverlayLayer = null; }
@@ -795,29 +1347,64 @@ body{
     refresh();
   });
 
-  // ---------- radius toggle (3km/1km) ----------
+  // ---------- mode (signal) + radius toggles ----------
+  var modeSeg = document.getElementById('mode-seg');
   var radiusSeg = document.getElementById('radius-seg');
   function updateRadiusLabels(){
     var label = state.radius==='3km' ? '3 km' : '1 km';
-    document.querySelector('.brand .sub').textContent = 'price vs. ' + label + ' neighborhood';
-    document.getElementById('legend-dot-title').textContent = 'Dots: price vs. ' + label + ' neighborhood';
-    document.getElementById('legend-dot-note').innerHTML = 'Color = how a listing’s price/m&sup2; compares to every other listing within ' + label + '. Blue = below average (better deal), red = above.';
+    var pctTicks = '<span>&minus;' + Math.round(CLAMP*100) + '%</span><span>0%</span><span>+' + Math.round(CLAMP*100) + '%</span>';
+    var sub, title, note, ticks, hollow, highlightTip;
+    if(state.mode==='spatial'){
+      sub = 'price vs. ' + label + ' neighborhood';
+      title = 'Dots: price vs. ' + label + ' neighborhood';
+      note = 'Color = how a listing’s price/m&sup2; compares to every other listing within ' + label + '. Blue = below average (better deal), red = above.';
+      ticks = pctTicks;
+      hollow = 'hollow = too few nearby comparables (low confidence)';
+      highlightTip = 'Rings the N cheapest listings vs. their neighborhood average, among what’s currently filtered/shown.';
+    } else if(state.mode==='residual'){
+      sub = 'price vs. model-expected';
+      title = 'Dots: price vs. model-expected';
+      note = 'Color = how a listing’s price/m&sup2; compares to what a hedonic model expects from its own features (area, floor, condition, age…) and the price level of comparable flats in the same building / complex / block. Blue = below expected (better deal), red = above.';
+      ticks = '<span>&minus;' + Math.round(RESIDUAL_CLAMP*100) + '%</span><span>0%</span><span>+' + Math.round(RESIDUAL_CLAMP*100) + '%</span>';
+      hollow = 'hollow = too few comparable flats at this address (low confidence)';
+      highlightTip = 'Rings the N listings priced furthest below what the model expects, among what’s currently filtered/shown.';
+    } else {
+      sub = 'combined deal score';
+      title = 'Dots: combined deal score';
+      note = 'Color = average of the neighborhood (3 km) and model signals as robust z-scores. Blue = cheap for its area AND cheap for what it is; red = pricey on both counts.';
+      ticks = '<span>+' + COMPOSITE_CLAMP.toFixed(1) + ' (deal)</span><span>0</span><span>&minus;' + COMPOSITE_CLAMP.toFixed(1) + '</span>';
+      hollow = 'hollow = one of the two signals is low confidence';
+      highlightTip = 'Rings the N listings with the highest combined deal score, among what’s currently filtered/shown.';
+    }
+    document.querySelector('.brand .sub').textContent = sub;
+    document.getElementById('legend-dot-title').textContent = title;
+    document.getElementById('legend-dot-note').innerHTML = note;
+    document.getElementById('legend-dot-ticks').innerHTML = ticks;
+    document.getElementById('legend-hollow-note').textContent = hollow;
+    document.getElementById('highlight-toggle-label').title = highlightTip;
+    // The radius only feeds the neighborhood signal (Combined uses 3 km by construction).
+    radiusSeg.classList.toggle('disabled', state.mode!=='spatial');
   }
-  radiusSeg.querySelectorAll('button').forEach(function(btn){
-    btn.addEventListener('click', function(){
-      if(btn.classList.contains('active')) return;
-      radiusSeg.querySelectorAll('button').forEach(function(b){b.classList.remove('active');});
-      btn.classList.add('active');
-      state.radius = btn.dataset.radius;
-      updateRadiusLabels();
-      restyleMarkers();
-      if(state.selectedId!=null){
-        var selRow = markers.map(function(m){return m._row;}).find(function(r){return r[F.ID]===state.selectedId;});
-        if(selRow) selectRow(selRow);
-      }
-      refresh();
+  function reapplySignal(){
+    updateRadiusLabels();
+    restyleMarkers();
+    if(state.selectedIdx >= 0) selectRow(ROWS[state.selectedIdx]);
+    refreshPopup();
+    refresh();
+  }
+  function bindSeg(seg, attr, onPick){
+    seg.querySelectorAll('button').forEach(function(btn){
+      btn.addEventListener('click', function(){
+        if(btn.classList.contains('active')) return;
+        seg.querySelectorAll('button').forEach(function(b){b.classList.remove('active');});
+        btn.classList.add('active');
+        onPick(btn.dataset[attr]);
+        reapplySignal();
+      });
     });
-  });
+  }
+  bindSeg(modeSeg, 'mode', function(v){ state.mode = v; });
+  bindSeg(radiusSeg, 'radius', function(v){ state.radius = v; });
 
   // ---------- sweet-spot highlight toggle ----------
   var highlightTopEl = document.getElementById('highlight-top');
@@ -826,12 +1413,12 @@ body{
   highlightTopEl.addEventListener('change', function(e){
     state.highlightTop = e.target.checked;
     highlightNEl.disabled = !e.target.checked;
-    refresh();
+    renderHighlights(lastShownIdx);
   });
   highlightNEl.addEventListener('change', function(e){
     state.highlightN = Math.max(5, Math.min(300, +e.target.value || 30));
     e.target.value = state.highlightN;
-    refresh();
+    renderHighlights(lastShownIdx);
   });
 
   // ---------- filter UI ----------
@@ -882,7 +1469,7 @@ body{
     state.districts.clear(); state.rooms.clear();
     state.priceMin=PRICE_MIN; state.priceMax=PRICE_MAX; state.areaMin=AREA_MIN; state.areaMax=AREA_MAX;
     state.showLowConf=false;
-    state.radius='3km'; state.highlightTop=false; state.highlightN=30; state.areaPolygon=null;
+    state.mode='spatial'; state.radius='3km'; state.highlightTop=false; state.highlightN=30; state.areaPolygon=null;
     document.querySelectorAll('.chip.active').forEach(function(c){c.classList.remove('active');});
     document.getElementById('price-min').value=PRICE_MIN; document.getElementById('price-max').value=PRICE_MAX;
     document.getElementById('area-min').value=AREA_MIN; document.getElementById('area-max').value=AREA_MAX;
@@ -890,6 +1477,7 @@ body{
     document.getElementById('highlight-top').checked=false;
     document.getElementById('highlight-n').value=30;
     document.getElementById('highlight-n').disabled=true;
+    modeSeg.querySelectorAll('button').forEach(function(b){b.classList.toggle('active', b.dataset.mode==='spatial');});
     radiusSeg.querySelectorAll('button').forEach(function(b){b.classList.toggle('active', b.dataset.radius==='3km');});
     updateRadiusLabels();
     restyleMarkers();
@@ -904,6 +1492,7 @@ body{
     'Snapshot ' + meta.generated_at.slice(0,10) + ' · ' + meta.rows_shown.toLocaleString('en-US') + ' of ' + meta.source_rows_total.toLocaleString('en-US') + ' listings mapped';
 
   updateRadiusLabels();
+  restyleMarkers();
   refresh();
 
   } catch(e) {

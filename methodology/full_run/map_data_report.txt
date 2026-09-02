@@ -1,16 +1,21 @@
 export_map_data.py
 input: C:\Users\DIT_Admin\Documents\Work\Krisha\methodology\full_run\ranked_full.csv
 output: C:\Users\DIT_Admin\Documents\Work\Krisha\methodology\full_run\map_data.json
-generated_at: 2026-09-01T17:07:09
-source rows total: 32136
-rows excluded (no coords): 975
-rows excluded (outside bbox (50.9, 51.3)x(71.0, 71.8)): 52
-rows shown on map: 31109
-spatial_price_pct_vs_avg null (shown as gray/hollow): 7
-spatial_rank_reliable=False (shown de-emphasized): 9
-spatial_price_pct_vs_avg_1km null: 9
-spatial_rank_reliable_1km=False: 17
-city median price_m2 (shown rows): 613079
-distinct complexes: 1272
-output file size: 2.63 MB
-elapsed: 1.09s
+generated_at: 2026-09-02T11:53:28
+source rows total: 31936
+rows excluded (no coords): 48
+rows excluded (outside bbox (50.9, 51.3)x(71.0, 71.8)): 42
+rows shown on map: 31846
+spatial_price_pct_vs_avg null (shown as gray/hollow): 6
+spatial_rank_reliable=False (shown de-emphasized): 13
+spatial_price_pct_vs_avg_1km null: 7
+spatial_rank_reliable_1km=False: 26
+residual_pct null (outside fit sample): 67
+residual_reliable=False (thin comparables, shown de-emphasized): 320
+strong deals (reliable & residual_z <= -1.5): 1708
+good_deal_score null: 11
+good_deal_score quantiles (shown rows): p1=-3.57, p5=-1.95, p50=-0.03, p95=+1.32, p99=+1.95
+city median price_m2 (shown rows): 629032
+distinct complexes: 1286
+output file size: 3.34 MB
+elapsed: 1.35s

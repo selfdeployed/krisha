@@ -30,7 +30,7 @@ from sklearn.neighbors import BallTree
 EARTH_RADIUS_KM = 6371.0088
 
 REPO_ROOT = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
-FULL_RAW_CSV = os.path.join(REPO_ROOT, "AstanaLinksParserJune2026_parsed.csv")
+FULL_RAW_CSV = os.path.join(REPO_ROOT, "AstanaLinksParser2026-09-01_parsed.csv")
 FULL_RUN_DIR = os.path.join(REPO_ROOT, "methodology", "full_run")
 
 # ---------------------------------------------------------------------------
@@ -214,6 +214,28 @@ def engineer_features(parsed_df, raw_df):
     is_dup.loc[has_full_key] = df.loc[has_full_key].duplicated(subset=dedup_key, keep="first")
     df = df.loc[~is_dup].reset_index(drop=True)
 
+    # --- second dedup pass: same unit relisted with a slightly different
+    # geocode. The exact-lat/lon key above misses relists whose pin moved
+    # by a few metres (or that carry the complex's centroid vs. the
+    # building's). Rows in the same complex (or, for standalone
+    # buildings, the same ~11m lat/lon cell) with identical area, price,
+    # floor AND floor_total are the same physical unit -- the model
+    # research run found e.g. 8 such rows for one 55 m2 / 40.5M flat on
+    # floor 2 of one complex. Left in, twins make each other look
+    # "fairly priced" in every building-level comparison. Measured on the
+    # 2026-09-01 full run: 1,135 extra rows / 877 groups (3.4%).
+    loc_key = np.where(
+        df["complex_name"].notna(),
+        "cx:" + df["complex_name"].astype(str),
+        "ll:" + df["lat"].round(4).astype(str) + "," + df["lon"].round(4).astype(str),
+    )
+    df["_relist_loc_key"] = loc_key
+    relist_key = ["_relist_loc_key", "area_total_m2", "price_tenge", "floor", "floor_total"]
+    has_relist_key = df[relist_key].notna().all(axis=1) & (df["lat"].notna() | df["complex_name"].notna())
+    is_relist = pd.Series(False, index=df.index)
+    is_relist.loc[has_relist_key] = df.loc[has_relist_key].duplicated(subset=relist_key, keep="first")
+    df = df.loc[~is_relist].drop(columns="_relist_loc_key").reset_index(drop=True)
+
     # --- core hedonic features ---
     df["price_m2"] = df["price_tenge"] / df["area_total_m2"]
     df.loc[df["area_total_m2"].isna() | (df["area_total_m2"] == 0), "price_m2"] = None
@@ -366,7 +388,7 @@ def run_full():
     lines.append(f"input: {parsed_path}")
     lines.append(f"output: {out_path}")
     lines.append(f"rows before dedup: {n_before_dedup}")
-    lines.append(f"duplicate/relist rows dropped (identical lat/lon/area/price): {n_dropped_dup}")
+    lines.append(f"duplicate/relist rows dropped (identical lat/lon/area/price, or same complex/~11m cell + area/price/floor/floor_total): {n_dropped_dup}")
     lines.append(f"total rows: {n_total}")
     lines.append(f"rows with lat/lon: {n_has_latlon}/{n_total}")
     lines.append(f"engineer_features() elapsed (incl. BallTree 3km spatial join): {elapsed_engineer:.2f}s")

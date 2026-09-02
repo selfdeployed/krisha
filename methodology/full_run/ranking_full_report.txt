@@ -1,67 +1,64 @@
 ranking.py --full
 input: C:\Users\DIT_Admin\Documents\Work\Krisha\methodology\full_run\features_full.csv
 output: C:\Users\DIT_Admin\Documents\Work\Krisha\methodology\full_run\ranked_full.csv
-total rows: 32136
+total rows: 31936
 
-=== PRIMARY: 3km-radius spatial relative price (drives good_deal_score) ===
-rows with a reliable (n_neighbors_3km >= 3) neighborhood avg: 31133/32136 (96.9%)
+=== SPATIAL: 3km-radius price vs. neighborhood (map 'spatial' mode) ===
+rows with a reliable (n_neighbors_3km >= 3) neighborhood avg: 31853/31936 (99.7%)
 
 === UI TOGGLE: 1km-radius spatial relative price (not in composite) ===
-rows with a reliable (n_neighbors_1km >= 3) neighborhood avg: 31114/32136 (96.8%)
+rows with a reliable (n_neighbors_1km >= 3) neighborhood avg: 31838/31936 (99.7%)
 
 === CONTEXT ONLY: in-complex / in-district percentile (not in composite) ===
-rows with complex_listing_count >= 5 (in-complex percentile meaningful): 24612/32136 (76.6%)
+rows with complex_listing_count >= 5 (in-complex percentile meaningful): 25119/31936 (78.7%)
 
-=== SECONDARY: DIAGNOSTIC full-formula OLS (clustered SE by grid_cell_id) ===
-NOT merged into good_deal_score yet -- diagnostic pass only, pending a
-decision on which features to keep after seeing VIF below.
-formula: ln_price_m2 ~ ln_area + building_age + floor_is_first + floor_is_last + ceiling_height_m + former_dormitory + exchange_possible + C(building_type) + C(district) + distance_to_center_km + avg_price_m2_within_3km_median
-n used in fit (complete-case across formula vars): 24567/32136 (76.4%)
-n clusters (grid_cell_id): 570
-R-squared: 0.4051  Adj R-squared: 0.4047
-coefficients (clustered SE):
-Intercept                         12.130729
-floor_is_first[T.True]            -0.030433
-floor_is_last[T.True]             -0.043711
-former_dormitory[T.True]           0.133516
-exchange_possible[T.True]         -0.022416
-C(building_type)[T.кирпичный]     -0.001615
-C(building_type)[T.монолитный]     0.044730
-C(building_type)[T.панельный]      0.073559
-C(district)[T.Байконур]            0.015813
-C(district)[T.Есильский]          -0.129506
-C(district)[T.Нура]               -0.120540
-C(district)[T.Сарайшык]           -0.045177
-C(district)[T.Сарыарка]            0.015579
-ln_area                            0.025668
-building_age                      -0.006924
-ceiling_height_m                   0.011457
-distance_to_center_km             -0.000317
-avg_price_m2_within_3km_median     0.000002
+=== RESIDUAL: hierarchical hedonic model (map 'residual' mode) ===
+ln_price_m2 = attributes + LOO-shrunk location intercepts (district > grid > complex > building) + 100m LOO kernel
+attribute formula: bs(ln_area, df=5) + building_age + ceiling_height_m + ceiling_miss + floor_is_first + floor_is_last + former_dormitory + exchange_possible + is_under_construction + price_is_installment + floor_rel + floor_miss + C(building_type) + C(apartment_condition) + C(rooms_bucket)
+levels / lambda: {'district': 2.0, 'grid_cell_id': 1.0, 'complex_name': 2.0, 'building': 2.0}; kernel h=100m cutoff=500m lambda=3.0; backfit iters=6
+fit sample: 31779/31936 (99.5%); excluded by reason: {'latlon_outside_astana': 44, 'area_lt_15': 37, 'no_price': 34, 'area_gt_400': 21, 'no_latlon': 14, 'price_m2_gt_3M': 5, 'price_m2_lt_150k': 2}
+residual_reliable: 31459/31936 (98.5%)
+  building n_others >= 2: 21861
+  else complex n_others >= 3: 4878
+  else kernel eff_n >= 10: 4720
+  unreliable (thin comparables): 320
+in-sample R-squared (all location terms leave-one-out): 0.7618
+sigma (sd of ln residual, reliable rows): 0.1418
+residual_pct quantiles (reliable rows): p1=-29.9%, p5=-20.0%, p10=-15.2%, p50=-0.2%, p90=+18.3%, p95=+25.9%, p99=+45.7%
+corr(residual_pct, spatial_pct_3km): 0.459   corr(residual_pct, spatial_pct_1km): 0.518
+top-300 deal overlap residual vs spatial_3km: 0.25
+elapsed: 2.6s (kernel matrix 1.2s)
 
-p-values (clustered SE):
-Intercept                         0.000000e+00
-floor_is_first[T.True]            2.129591e-03
-floor_is_last[T.True]             1.687910e-10
-former_dormitory[T.True]          5.697867e-02
-exchange_possible[T.True]         2.802809e-03
-C(building_type)[T.кирпичный]     9.091967e-01
-C(building_type)[T.монолитный]    4.839751e-04
-C(building_type)[T.панельный]     1.024720e-02
-C(district)[T.Байконур]           4.145612e-01
-C(district)[T.Есильский]          2.894740e-05
-C(district)[T.Нура]               4.167250e-05
-C(district)[T.Сарайшык]           2.538451e-02
-C(district)[T.Сарыарка]           4.113916e-01
-ln_area                           5.525269e-02
-building_age                      6.366977e-17
-ceiling_height_m                  1.282295e-01
-distance_to_center_km             7.975320e-07
-avg_price_m2_within_3km_median    4.594036e-42
+attribute coefficients (OLS at converged location terms, SE clustered by grid_cell_id):
+                                              coef      p
+Intercept                                  13.2025 0.0000
+C(building_type)[T.иной]                   -0.0130 0.1014
+C(building_type)[T.кирпичный]              -0.0288 0.0000
+C(building_type)[T.монолитный]              0.0071 0.1775
+C(building_type)[T.панельный]               0.0047 0.4456
+C(apartment_condition)[T.needs_renovation] -0.0674 0.0000
+C(apartment_condition)[T.rough]            -0.1473 0.0000
+C(apartment_condition)[T.unknown]          -0.0657 0.0000
+C(rooms_bucket)[T.2-room]                  -0.0032 0.4963
+C(rooms_bucket)[T.3-room]                  -0.0200 0.0033
+C(rooms_bucket)[T.4+room]                  -0.0242 0.0082
+C(rooms_bucket)[T.studio]                  -0.0219 0.0465
+bs(ln_area, df=5)[0]                       -0.0494 0.3324
+bs(ln_area, df=5)[1]                       -0.2702 0.0000
+bs(ln_area, df=5)[2]                       -0.3237 0.0000
+bs(ln_area, df=5)[3]                       -0.2551 0.0000
+bs(ln_area, df=5)[4]                       -0.2817 0.0001
+building_age                               -0.0067 0.0000
+ceiling_height_m                            0.2021 0.0000
+ceiling_miss                               -0.0750 0.0000
+floor_is_first                             -0.0392 0.0000
+floor_is_last                              -0.0446 0.0000
+former_dormitory                           -0.1307 0.0000
+exchange_possible                           0.0213 0.0000
+is_under_construction                      -0.0435 0.0000
+price_is_installment                        0.0400 0.0000
+floor_rel                                  -0.0169 0.0001
+floor_miss                                 -0.0113 0.0012
 
-VIF, continuous predictors only (complete-case n=28985):
-  ln_area: 1.04
-  building_age: 1.23
-  ceiling_height_m: 1.00
-  distance_to_center_km: 1.00
-  avg_price_m2_within_3km_median: 1.27
+=== COMPOSITE: good_deal_score = nanmean(robust_z(-spatial_pct | reliable), robust_z(-residual_pct | reliable)) ===
+rows with a composite score: 31855/31936 (99.7%)

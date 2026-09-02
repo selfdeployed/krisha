@@ -39,7 +39,7 @@ from datetime import datetime
 import pandas as pd
 
 REPO_ROOT = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
-FULL_INPUT_CSV = os.path.join(REPO_ROOT, "AstanaLinksParserJune2026_parsed.csv")
+FULL_INPUT_CSV = os.path.join(REPO_ROOT, "AstanaLinksParser2026-09-01_parsed.csv")
 FULL_RUN_DIR = os.path.join(REPO_ROOT, "methodology", "full_run")
 
 # Combined, ordered label list. advert_info-specific labels come first (in
